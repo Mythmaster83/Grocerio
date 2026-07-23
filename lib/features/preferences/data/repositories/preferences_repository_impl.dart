@@ -3,7 +3,6 @@ import 'package:grocer/features/preferences/domain/entities/app_preferences.dart
 import 'package:grocer/features/preferences/domain/repositories/preferences_repository.dart';
 import '../datasources/preferences_local_datasource.dart';
 import '../models/preferences_model.dart';
-import 'package:flutter/material.dart';
 import '../../../../core/errors/exceptions.dart';
 import '../../../../core/utils/app_logger.dart';
 
@@ -34,8 +33,8 @@ class PreferencesRepositoryImpl implements PreferencesRepository{
   }
 
   AppPreferences _toDomain(PreferencesModel m) => AppPreferences(
-    themeMode: ThemeMode.values[m.themeModeIndex],
-    accentColor: Color(m.accentColorValue),
+    themeModeIndex: m.themeModeIndex,
+    accentColorValue: m.accentColorValue,
     fontFamily: m.fontFamily,
     textScale: m.textScale,
     pageOrder: m.pageOrderIndices.map((i) => HomePage.values[i]).toList(),
@@ -43,8 +42,8 @@ class PreferencesRepositoryImpl implements PreferencesRepository{
 
   PreferencesModel _fromDomain(AppPreferences p) => PreferencesModel()
     ..isarId = 0
-    ..themeModeIndex = p.themeMode.index
-    ..accentColorValue = p.accentColor.toARGB32()
+    ..themeModeIndex = p.themeModeIndex
+    ..accentColorValue = p.accentColorValue
     ..fontFamily = p.fontFamily
     ..textScale = p.textScale
     ..pageOrderIndices = p.pageOrder.map((page) => page.index).toList();

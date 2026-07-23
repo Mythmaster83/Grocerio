@@ -25,8 +25,8 @@ class SettingsScreen extends ConsumerWidget {
                 ButtonSegment(value: ThemeMode.light, label: Text('Light')),
                 ButtonSegment(value: ThemeMode.dark, label: Text('Dark')),
               ],
-              selected: {prefs.themeMode},
-              onSelectionChanged: (s) => controller.updatePrefs((p) => p.copyWith(themeMode: s.first)),
+              selected: {ThemeMode.values[prefs.themeModeIndex]},
+              onSelectionChanged: (s) => controller.updatePrefs((p) => p.copyWith(themeModeIndex: s.first.index)),
             ),
             const SizedBox(height: 24),
             Text('Accent color', style: Theme.of(context).textTheme.titleMedium),
@@ -34,9 +34,9 @@ class SettingsScreen extends ConsumerWidget {
             Wrap(
               spacing: 12,
               children: AppTheme.accentPalette.map((color) {
-                final selected = prefs.accentColor.toARGB32() == color.toARGB32();
+                final selected = Color(prefs.accentColorValue).toARGB32() == color.toARGB32();
                 return GestureDetector(
-                  onTap: () => controller.updatePrefs((p) => p.copyWith(accentColor: color)),
+                  onTap: () => controller.updatePrefs((p) => p.copyWith(accentColorValue: color.toARGB32())),
                   child: CircleAvatar(
                     backgroundColor: color,
                     radius: 20,

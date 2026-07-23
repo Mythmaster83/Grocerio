@@ -22,15 +22,15 @@ class GrocerApp extends ConsumerWidget {
     return MaterialApp(
       title: 'Grocer',
       debugShowCheckedModeBanner: false,
-      themeMode: prefs?.themeMode ?? ThemeMode.system,
+      themeMode: ThemeMode.values[prefs?.themeModeIndex ?? 0],
       theme: AppTheme.build(
         brightness: Brightness.light,
-        accent: prefs?.accentColor ?? const Color(0xFF2F6F4F),
+        accent: Color(prefs?.accentColorValue ?? 0xFF2F6F4F),
         fontFamily: prefs?.fontFamily ?? 'Inter',
       ),
       darkTheme: AppTheme.build(
         brightness: Brightness.dark,
-        accent: prefs?.accentColor ?? const Color(0xFF2F6F4F),
+        accent: Color(prefs?.accentColorValue ?? 0xFF2F6F4F),
         fontFamily: prefs?.fontFamily ?? 'Inter',
       ),
       // User text-size preference is applied here — the one place Flutter

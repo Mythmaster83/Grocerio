@@ -1,41 +1,40 @@
 import 'package:equatable/equatable.dart';
-import 'package:flutter/material.dart';
 
 enum HomePage { lists, schedule, settings }
 
 class AppPreferences extends Equatable {
-  final ThemeMode themeMode;
-  final Color accentColor;
+  final int themeModeIndex;
+  final int accentColorValue;
   final String fontFamily;
   final double textScale; // 0.85 - 1.4, clamped
   final List<HomePage> pageOrder;
 
   const AppPreferences({
-    required this.themeMode,
-    required this.accentColor,
+    required this.themeModeIndex,
+    required this.accentColorValue,
     required this.fontFamily,
     required this.textScale,
     required this.pageOrder,
   });
 
   factory AppPreferences.defaults() => const AppPreferences(
-        themeMode: ThemeMode.system,
-        accentColor: Color(0xFF2F6F4F),
+        themeModeIndex: 0,
+        accentColorValue: 0xFF2F6F4F,
         fontFamily: 'Inter',
         textScale: 1.0,
         pageOrder: [HomePage.lists, HomePage.schedule, HomePage.settings],
       );
 
   AppPreferences copyWith({
-    ThemeMode? themeMode,
-    Color? accentColor,
+    int? themeModeIndex,
+    int? accentColorValue,
     String? fontFamily,
     double? textScale,
     List<HomePage>? pageOrder,
   }) {
     return AppPreferences(
-      themeMode: themeMode ?? this.themeMode,
-      accentColor: accentColor ?? this.accentColor,
+      themeModeIndex: themeModeIndex ?? this.themeModeIndex,
+      accentColorValue: accentColorValue ?? this.accentColorValue,
       fontFamily: fontFamily ?? this.fontFamily,
       textScale: (textScale ?? this.textScale).clamp(0.85, 1.4),
       pageOrder: pageOrder ?? this.pageOrder,
@@ -43,5 +42,5 @@ class AppPreferences extends Equatable {
   }
 
   @override
-  List<Object?> get props => [themeMode, accentColor, fontFamily, textScale, pageOrder];
+  List<Object?> get props => [themeModeIndex, accentColorValue, fontFamily, textScale, pageOrder];
 }
