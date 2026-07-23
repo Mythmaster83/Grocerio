@@ -3,7 +3,7 @@ import 'package:grocer/features/preferences/domain/entities/app_preferences.dart
 import 'package:grocer/features/preferences/domain/repositories/preferences_repository.dart';
 import '../datasources/preferences_local_datasource.dart';
 import '../models/preferences_model.dart';
-import 'package:flutter/material.dart'; // ThemeMode, Color (until Phase E)
+import 'package:flutter/material.dart';
 import '../../../../core/errors/exceptions.dart';
 import '../../../../core/utils/app_logger.dart';
 
@@ -24,10 +24,28 @@ class PreferencesRepositoryImpl implements PreferencesRepository{
 
   @override
   Future<Result<void>> save(AppPreferences prefs) async {
-    // TODO: implement save
-    throw UnimplementedError();
+    try {
+      await _local.save(_fromDomain(prefs));
+      return const Result.ok(null);
+    } on StorageException catch(e, st) {
+      logger.error(e.message, e.cause, st);
+      return Result.err(StorageFailure('Failed to save preferences', cause: e));
+    }
   }
-  
-  
 
+  AppPreferences _toDomain(PreferencesModel m) => AppPreferences(
+    themeMode: ThemeMode.values[m.themeModeIndex],
+    accentColor: Color(m.accentColorValue),
+    fontFamily: m.fontFamily,
+    textScale: m.textScale,
+    pageOrder: m.pageOrderIndices.map((i) => HomePage.values[i]).toList(),
+  );
+
+  PreferencesModel _fromDomain(AppPreferences p) => PreferencesModel()
+    ..isarId = 0
+    ..themeModeIndex = p.themeMode.index
+    ..accentColorValue = p.accentColor.toARGB32()
+    ..fontFamily = p.fontFamily
+    ..textScale = p.textScale
+    ..pageOrderIndices = p.pageOrder.map((page) => page.index).toList();
 }

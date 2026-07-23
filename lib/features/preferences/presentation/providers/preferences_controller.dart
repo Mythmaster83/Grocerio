@@ -1,9 +1,6 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:isar/isar.dart';
-import '../../../../core/di/isar_provider.dart';
-import '../../data/models/preferences_model.dart';
 import '../../domain/entities/app_preferences.dart';
+import 'preferences_di.dart'; // preferencesRepositoryProvider
 
 /// Preferences are read constantly (every screen rebuild depends on theme/
 /// text scale) and written rarely (settings screen only) — a plain
@@ -12,42 +9,28 @@ import '../../domain/entities/app_preferences.dart';
 /// stream: we don't need live cross-isolate sync for a single-user local
 /// setting, just "load once, hold in memory, write-through on change."
 class PreferencesController extends AsyncNotifier<AppPreferences> {
-  Isar get _isar => ref.read(isarProvider);
 
   @override
   Future<AppPreferences> build() async {
-    final existing = await _isar.preferencesModels.get(0);
-    final model = existing ?? PreferencesModel.defaults();
-    if (existing == null) {
-      await _isar.writeTxn(() => _isar.preferencesModels.put(model));
-    }
-    return _toDomain(model);
+    final result = await ref.read(preferencesRepositoryProvider).load();
+    return result.when(
+      ok: (prefs) => prefs,
+      err: (failure) => throw failure, // AsyncNotifier turns this into AsyncError
+    );
   }
 
-  // Named `updatePrefs`, not `update`: AsyncNotifier already declares an
-  // inherited `update` with an incompatible signature, so reusing that name
-  // is a compile-time invalid_override error.
   Future<void> updatePrefs(AppPreferences Function(AppPreferences current) transform) async {
     final current = state.valueOrNull ?? AppPreferences.defaults();
     final updated = transform(current);
-    state = AsyncData(updated); // optimistic — settings screen should feel instant
-    final model = PreferencesModel()
-      ..isarId = 0
-      ..themeModeIndex = updated.themeMode.index
-      ..accentColorValue = updated.accentColor.toARGB32()
-      ..fontFamily = updated.fontFamily
-      ..textScale = updated.textScale
-      ..pageOrderIndices = updated.pageOrder.map((p) => p.index).toList();
-    await _isar.writeTxn(() => _isar.preferencesModels.put(model));
+    state = AsyncData(updated); // optimistic UI
+    final result = await ref.read(preferencesRepositoryProvider).save(updated);
+    result.when(
+      ok: (_) {},
+      err: (failure) {
+        state = AsyncError(failure, StackTrace.current);
+      },
+    );
   }
-
-  AppPreferences _toDomain(PreferencesModel m) => AppPreferences(
-        themeMode: ThemeMode.values[m.themeModeIndex],
-        accentColor: Color(m.accentColorValue),
-        fontFamily: m.fontFamily,
-        textScale: m.textScale,
-        pageOrder: m.pageOrderIndices.map((i) => HomePage.values[i]).toList(),
-      );
 }
 
 final preferencesControllerProvider =
