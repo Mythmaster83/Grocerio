@@ -17,7 +17,9 @@ class ListsLocalDataSource {
     return _isar.groceryListModels
         .where()
         .watch(fireImmediately: true)
-        .asyncMap((_) => _isar.groceryListModels.where().sortByScheduledFor().findAll());
+        .asyncMap(
+          (_) => _isar.groceryListModels.where().sortByScheduledFor().findAll(),
+        );
   }
 
   Stream<GroceryListModel?> watchList(String publicId) {
@@ -36,6 +38,50 @@ class ListsLocalDataSource {
 
   Future<GroceryListModel?> getList(String publicId) =>
       _findByPublicId(publicId);
+
+  /// Deep-copy embedded items. Isar can corrupt object-lists if a parent row
+  /// is `put` after mutating scalars without reassigning `items`.
+  List<GroceryItemModel> _cloneItems(
+    List<GroceryItemModel> source, {
+    bool uncheckAll = false,
+    DateTime? updatedAt,
+  }) {
+    final now = updatedAt ?? DateTime.now();
+    return [
+      for (final i in source)
+        GroceryItemModel()
+          ..id = i.id
+          ..name = i.name
+          ..quantity = i.quantity
+          ..unit = i.unit
+          ..isChecked = uncheckAll ? false : i.isChecked
+          ..imageUrl = i.imageUrl
+          ..updatedAt = uncheckAll ? now : i.updatedAt,
+    ];
+  }
+
+  /// Replace a list row by rewriting every field (keeps [isarId]).
+  Future<void> _putListCopy(
+    GroceryListModel existing, {
+    String? name,
+    ScheduleFrequencyDb? frequency,
+    DateTime? scheduledFor,
+    DateTime? lastMissedOn,
+    bool clearLastMissedOn = false,
+    List<GroceryItemModel>? items,
+  }) async {
+    final copy = GroceryListModel()
+      ..isarId = existing.isarId
+      ..publicId = existing.publicId
+      ..name = name ?? existing.name
+      ..frequency = frequency ?? existing.frequency
+      ..scheduledFor = scheduledFor ?? existing.scheduledFor
+      ..createdAt = existing.createdAt
+      ..lastMissedOn =
+          clearLastMissedOn ? null : (lastMissedOn ?? existing.lastMissedOn)
+      ..items = items ?? _cloneItems(existing.items);
+    await _isar.groceryListModels.put(copy);
+  }
 
   Future<GroceryListModel> createList({
     required String name,
@@ -91,8 +137,10 @@ class ListsLocalDataSource {
         if (model == null) {
           throw StorageException('List not found: $listPublicId');
         }
-        model.items = [...model.items, item];
-        await _isar.groceryListModels.put(model);
+        await _putListCopy(
+          model,
+          items: [..._cloneItems(model.items), item],
+        );
       });
       return item;
     } catch (e) {
@@ -115,7 +163,7 @@ class ListsLocalDataSource {
         if (model == null) {
           throw StorageException('List not found: $listPublicId');
         }
-        final items = [...model.items];
+        final items = _cloneItems(model.items);
         final idx = items.indexWhere((i) => i.id == itemId);
         if (idx == -1) throw StorageException('Item not found: $itemId');
 
@@ -129,8 +177,7 @@ class ListsLocalDataSource {
           ..imageUrl = existing.imageUrl
           ..updatedAt = DateTime.now();
 
-        model.items = items;
-        await _isar.groceryListModels.put(model);
+        await _putListCopy(model, items: items);
       });
     } catch (e) {
       if (e is StorageException) rethrow;
@@ -148,8 +195,10 @@ class ListsLocalDataSource {
         if (model == null) {
           throw StorageException('List not found: $listPublicId');
         }
-        model.items = model.items.where((i) => i.id != itemId).toList();
-        await _isar.groceryListModels.put(model);
+        await _putListCopy(
+          model,
+          items: _cloneItems(model.items).where((i) => i.id != itemId).toList(),
+        );
       });
     } catch (e) {
       if (e is StorageException) rethrow;
@@ -168,21 +217,12 @@ class ListsLocalDataSource {
         if (model == null) {
           throw StorageException('List not found: $listPublicId');
         }
-        final now = DateTime.now();
-        model.scheduledFor = newScheduledFor;
-        model.lastMissedOn = null;
-        model.items = [
-          for (final i in model.items)
-            GroceryItemModel()
-              ..id = i.id
-              ..name = i.name
-              ..quantity = i.quantity
-              ..unit = i.unit
-              ..isChecked = false
-              ..imageUrl = i.imageUrl
-              ..updatedAt = now,
-        ];
-        await _isar.groceryListModels.put(model);
+        await _putListCopy(
+          model,
+          scheduledFor: newScheduledFor,
+          clearLastMissedOn: true,
+          items: _cloneItems(model.items, uncheckAll: true),
+        );
       });
     } catch (e) {
       if (e is StorageException) rethrow;
@@ -201,9 +241,11 @@ class ListsLocalDataSource {
         if (model == null) {
           throw StorageException('List not found: $listPublicId');
         }
-        model.scheduledFor = scheduledFor;
-        model.lastMissedOn = lastMissedOn;
-        await _isar.groceryListModels.put(model);
+        await _putListCopy(
+          model,
+          scheduledFor: scheduledFor,
+          lastMissedOn: lastMissedOn,
+        );
       });
     } catch (e) {
       if (e is StorageException) rethrow;
@@ -221,8 +263,7 @@ class ListsLocalDataSource {
         if (model == null) {
           throw StorageException('List not found: $listPublicId');
         }
-        model.lastMissedOn = lastMissedOn;
-        await _isar.groceryListModels.put(model);
+        await _putListCopy(model, lastMissedOn: lastMissedOn);
       });
     } catch (e) {
       if (e is StorageException) rethrow;
@@ -237,8 +278,7 @@ class ListsLocalDataSource {
         if (model == null) {
           throw StorageException('List not found: $listPublicId');
         }
-        model.lastMissedOn = null;
-        await _isar.groceryListModels.put(model);
+        await _putListCopy(model, clearLastMissedOn: true);
       });
     } catch (e) {
       if (e is StorageException) rethrow;
