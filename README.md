@@ -1,9 +1,11 @@
-# Grocer — Foundation
+# Grocerio Alpha
 
-Production-grade **foundation** for a grocery/stock list manager. This is not
-a finished app — it's a fully wired architectural skeleton with one complete
-vertical slice (Lists) so any engineer or agent can extend it without
-guessing at conventions.
+Grocery / stock list manager built as a **feature-first Clean Architecture**
+Flutter app (Riverpod + Isar + Dio/Pexels + speech_to_text).
+
+This repo is past the "foundation-only" stage: lists, preferences, images,
+and voice are wired end-to-end. Learning exercises in `EXERCISES.md` are
+complete. Next product work is in `ROADMAP.md`.
 
 ## Setup
 
@@ -11,43 +13,49 @@ guessing at conventions.
 flutter pub get
 cp key.env.example .env      # then fill in your real PEXELS_API_KEY
 flutter pub run build_runner build --delete-conflicting-outputs
+flutter analyze
+flutter test
 flutter run
 ```
 
 `build_runner` generates `*.g.dart` for Isar models — required before first
 run, and again after editing any `@collection`/`@embedded` class.
 
-### Platform setup this repo does NOT include
+### Platform permissions
 
-This repo ships `lib/`, not a full `flutter create` scaffold. Before running
-on-device you still need to run `flutter create .` in this directory once
-(non-destructive — it only adds `android/`, `ios/`, etc. that are missing),
-then add:
-
-- **Microphone permission** (voice input): `NSMicrophoneUsageDescription` +
-  `NSSpeechRecognitionUsageDescription` in `ios/Runner/Info.plist`;
-  `RECORD_AUDIO` in `android/app/src/main/AndroidManifest.xml`.
-- **Internet permission** on Android (usually default, verify it's present).
+- **Internet:** `android/app/src/main/AndroidManifest.xml` (`INTERNET`).
+- **Microphone (voice):** `RECORD_AUDIO` on Android; iOS
+  `NSMicrophoneUsageDescription` + `NSSpeechRecognitionUsageDescription`.
+- **Windows:** no in-app mic prompt — see Exercise 3B / voice controller
+  (`blockedByOS` + Settings guidance).
 
 ## Read these before writing code
 
-1. `architecture.md` — layering rules, why each decision was made, known
-   limitations, and the client-API-key risk you must not ignore.
-2. `goals.md` — what "done" means for the MVP, explicit non-goals.
-3. `skills.md` — conventions: naming, error handling, state management
-   patterns, testing expectations. Read this before adding a feature.
+1. `architecture.md` — layering, Riverpod shapes, storage, security.
+2. `goals.md` — done definition, in/out of scope, next increment.
+3. `skills.md` — how to add a feature (copy `lists/` or `preferences/`).
+4. `ROADMAP.md` — Complete Shopping + schedule reconciliation plan.
+5. `EXERCISES.md` — completed learning track (reference patterns).
 
 ## Repo layout
 
 ```
 lib/
-  core/            # cross-feature: config, security, network, theme, DI, shared widgets
+  core/            # config, security, network, theme, DI, shared widgets
   features/
-    lists/         # COMPLETE reference vertical slice — copy this pattern
-    voice_input/   # working, minimal
-    images/        # working, minimal (Pexels)
-    scheduling/    # shared domain value object only (ScheduleFrequency)
-    preferences/   # complete (theme/font/text-scale/page-order)
-  app.dart         # MaterialApp + theme wiring
-  main.dart        # startup: env load, Isar open, ProviderScope
+    lists/         # reference vertical slice (CRUD + images on add)
+    preferences/   # layered like lists (repo + pure-Dart domain ints)
+    voice_input/   # mic + platform permission / Windows UX
+    images/        # Pexels + NetworkImageWithFallback
+    scheduling/    # ScheduleFrequency (+ nextOccurrence)
+  app.dart
+  main.dart
 ```
+
+## Current product gaps (intentional)
+
+- **Complete Shopping** is still a confirm + SnackBar stub.
+- **Overdue dates** are not auto-reconciled; no "missed" indicator yet.
+- **Home pageOrder** persists but is not a drag-reorder UI.
+
+See `ROADMAP.md` for how those will be built without breaking layering.

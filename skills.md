@@ -6,7 +6,13 @@ applies, this file should answer it before you guess.
 
 ## 1. Adding a new feature — the checklist
 
-Use `features/lists/` as the reference implementation for every step below.
+Use `features/lists/` as the reference for list-like CRUD, or
+`features/preferences/` as the reference for a small singleton setting
+feature (load/save + `Result`, no streams required).
+
+For schedule/trip behavior (complete shopping, overdue rollover), read
+`ROADMAP.md` first — those rules are product-locked and must not be
+reimplemented ad hoc in widgets.
 
 1. **Folder**: `lib/features/<feature_name>/{data,domain,presentation}/...`
    matching the existing subfolder names exactly (`data/models`,

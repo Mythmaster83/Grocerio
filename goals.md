@@ -31,15 +31,16 @@ and should say so.
 - [x] Scheduling: one-time / weekly / biweekly / monthly, with a
       scheduled date shown per list.
 - [x] Preferences: theme mode, accent color, font, text size, home page
-      order (data model + persistence done; drag-to-reorder UI for page
-      order is a stub — the `AppPreferences.pageOrder` list exists and
-      persists, wiring it into an actual reorderable home layout is the
-      next increment).
+      order (data model + persistence done; **layered** like `lists/` —
+      repository + DI + pure-Dart domain ints; drag-to-reorder UI for page
+      order is still a stub — `pageOrder` persists but Home does not reorder).
 - [x] Fixed-height, text-scale-respecting layouts.
-- [x] Add Item / Complete Shopping / Voice Input buttons and modals.
+- [x] Add Item / Voice Input buttons and modals.
+- [ ] **Complete Shopping** — button exists; behavior still a stub (SnackBar
+      only). Real behavior specified in `ROADMAP.md` Feature A.
 - [x] Real-time updates: writes stream to UI with no manual refresh.
 - [x] Local storage via Isar.
-- [x] API images (Pexels) with fallback icons.
+- [x] API images (Pexels) with fallback icons — wired end-to-end on add item.
 - [x] API keys kept out of source control via `.gitignore` + `.env`.
 
 ## 3. Explicitly out of scope for this MVP (do not build without a
@@ -55,12 +56,6 @@ and should say so.
   Needs a curated or learned suggestion source — trivial to build a bad
   version (static list), not trivial to build a good one. Deferred rather
   than shipped half-working.
-- **Automatic list date rollover** (a "weekly" list silently advancing its
-  `scheduledFor` after the date passes). This is a real feature, not a bug
-  fix — `ScheduleFrequency.nextOccurrence()` already computes the *next*
-  date as a pure function; wiring it to actually roll the list forward
-  (and deciding whether that resets checked items) is a product decision,
-  not just an engineering one. Don't silently implement a guess.
 - **Backend proxy for the Pexels API key.** See `architecture.md` §5.1.
   Not needed at current scope (no user accounts, no privileged API), but
   it's the correct next step the moment either of those changes — flagged
@@ -74,27 +69,41 @@ and should say so.
 - **Certificate pinning.** Deferred until there's a stable backend host to
   pin against.
 
-## 4. Known limitations carried over from the prior iteration (status)
+## 3b. Now in scope — next increment (`ROADMAP.md`)
 
-| Limitation | Status in this foundation |
+These were deferred; product decisions are now locked in `ROADMAP.md`:
+
+- [ ] **Complete Shopping** — uncheck all, pop Home, advance recurring date
+      or delete one-time list.
+- [ ] **Startup schedule reconciliation** — on app open, roll overdue
+      recurring dates forward, flag missed one-time lists without deleting,
+      show a uniform "Last date missed" indicator.
+
+Do not implement these ad hoc in widgets — follow `ROADMAP.md` layering and
+the persisted-miss-flag rule.
+
+## 4. Known limitations (status)
+
+| Limitation | Status |
 |---|---|
 | Push notifications | Not started (see §3) |
 | Item suggestion dropdown | Not started (see §3) |
-| Automatic list date updates | Pure-function building block exists (`ScheduleFrequency.nextOccurrence`); rollover behavior not wired |
-| Voice input minor quirks | Structurally contained, not eliminated — transcript is always editable before commit, never auto-saved |
-| Redirect to image sources not working | Fixed at the widget level — `NetworkImageWithFallback` never leaves a broken/hanging state; if "view full image source" is a separate feature (not just avoiding a broken UI), that's still unbuilt |
-| Checkbox bugs | Structurally addressed — single write path, no local mirrored state (see `architecture.md` §1) — but this claim should be verified with the widget tests in `test/widget/` before being trusted, not taken on faith |
+| Automatic list date updates | **Planned** — see `ROADMAP.md`; building block exists (`nextOccurrence`) |
+| Complete Shopping real behavior | **Planned** — UI stub only today |
+| Voice input minor quirks | Contained — transcript editable before commit |
+| Image source "view photographer" deep link | Unbuilt; fallback widget is fine |
+| Checkbox drift | Structurally addressed; covered by list stream + controller path |
+| Monthly date edge cases beyond Jan | Partially tested; harden before schedule reconciliation |
 
-## 5. Definition of MVP-complete (the whole app, beyond this foundation)
+## 5. Definition of foundation-complete
 
 This foundation is complete when an agent can:
 
-1. Add a genuinely new feature (e.g. "shopping budget tracking") by
-   copying the `lists/` folder structure, without needing to ask what
-   pattern to follow.
+1. Add a genuinely new feature by copying the `lists/` (or `preferences/`)
+   folder structure, without needing to ask what pattern to follow.
 2. Run `flutter analyze` clean and `flutter test` green.
-3. Hand the repo to another engineer with only `skills.md` and
-   `architecture.md` as onboarding material.
+3. Hand the repo to another engineer with `skills.md`, `architecture.md`,
+   and `ROADMAP.md` as onboarding material.
 
-The product itself (all checkboxes in §2, tested end-to-end on a device)
-is the next phase, not this deliverable.
+Learning exercises in `EXERCISES.md` are complete. Product polish
+(complete shopping + reconciliation) is the next deliverable.

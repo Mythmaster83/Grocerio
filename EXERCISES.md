@@ -12,6 +12,25 @@ the single habit that separates "intern mockup" from "shippable app."
 
 ---
 
+## Status (updated 2026-07-23)
+
+| # | Exercise | Status |
+|---|----------|--------|
+| 1 | Widget tests | ✅ Complete |
+| 2 | Surface errors (`ref.listen`) | ✅ Complete |
+| 3 | Voice permissions (Android/iOS) | ✅ Complete |
+| 3B | Windows mic UX | ✅ Complete |
+| 4 | Date bug + unit test | ✅ Complete (Jan edge cases covered; monthly clamp still narrow — optional harden) |
+| 5 | Preferences layered refactor | ✅ Complete (Phases A–F) |
+| 6 | Wire images end-to-end | ✅ Complete |
+| 7 | Deprecations | ✅ Complete |
+
+**Learning track closed.** Next product work is documented in `ROADMAP.md`
+(complete-shopping + schedule reconciliation). Keep using this file as a
+pattern reference when adding features.
+
+---
+
 ## How to run the checks
 
 ```bash
@@ -423,15 +442,16 @@ prints for these files.
 
 ## Suggested order & difficulty
 
-| # | Exercise | Difficulty | Teaches |
-|---|----------|-----------|---------|
-| 1 | Real widget test | ⭐ | Testing + provider overrides |
-| 2 | Surface errors | ⭐ | `ref.listen`, AsyncValue, UX honesty |
-| 7 | Deprecations | ⭐ | Reading the analyzer |
-| 3 | Voice permissions (Android/iOS) | ⭐⭐ | Native platform config |
-| 3B | Windows mic UX (no prompt) | ⭐⭐ | Platform differences, failure messaging |
-| 4 | Date bug + unit test | ⭐⭐ | Pure functions, edge cases |
-| 6 | Wire images | ⭐⭐⭐ | End-to-end data flow, DI |
-| 5 | Preferences refactor | ⭐⭐⭐ | **Layering / separation of concerns** |
+| # | Exercise | Difficulty | Teaches | Status |
+|---|----------|-----------|---------|--------|
+| 1 | Real widget test | ⭐ | Testing + provider overrides | ✅ |
+| 2 | Surface errors | ⭐ | `ref.listen`, AsyncValue, UX honesty | ✅ |
+| 7 | Deprecations | ⭐ | Reading the analyzer | ✅ |
+| 3 | Voice permissions (Android/iOS) | ⭐⭐ | Native platform config | ✅ |
+| 3B | Windows mic UX (no prompt) | ⭐⭐ | Platform differences, failure messaging | ✅ |
+| 4 | Date bug + unit test | ⭐⭐ | Pure functions, edge cases | ✅ |
+| 6 | Wire images | ⭐⭐⭐ | End-to-end data flow, DI | ✅ |
+| 5 | Preferences refactor | ⭐⭐⭐ | **Layering / separation of concerns** | ✅ |
 
-Do #5 last — once it clicks, you'll understand why the whole app is shaped the way it is.
+All learning exercises are complete. For the next product features (complete
+shopping, overdue schedule reconciliation), see `ROADMAP.md`.

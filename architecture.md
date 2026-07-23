@@ -181,9 +181,15 @@ worth doing.
 | Concurrent multi-device sync | **Not supported at all** — Isar is local-only | Immediately, if "shared household list" is ever a requirement | This is the single biggest scope wall in the current architecture. Adding sync means introducing a remote source of truth and conflict resolution — not a small add-on. Decide explicitly, don't back into it. |
 | Voice recognition accuracy | Adequate for short, common grocery nouns | Compound/uncommon items, non-English locales | Documented as a known limitation by design (editable transcript, not auto-commit) — see `voice_input_controller.dart` |
 
-## 8. Explicitly deferred (see `goals.md` for the authoritative list)
+## 8. Explicitly deferred vs next increment
 
-Push notifications, item suggestion dropdown, automatic list date rollover,
-full offline-first sync, certificate pinning, backend API-key proxy. Each
-of these is deferred with a stated reason above or in `goals.md` — treat
-"deferred" as "designed around, not forgotten."
+**Still deferred** (see `goals.md` §3): push notifications, item suggestion
+dropdown, full offline-first sync, certificate pinning, backend API-key proxy.
+
+**Next increment** (authoritative plan: `ROADMAP.md`): Complete Shopping
+behavior and startup schedule reconciliation (overdue rollover + persisted
+miss indicator). Do not re-defer these as "out of scope" without updating
+`goals.md` and `ROADMAP.md` together.
+
+**Prerequisite before reconciliation ships:** harden
+`ScheduleFrequency.nextOccurrence` month-end clamping (tests beyond January).
