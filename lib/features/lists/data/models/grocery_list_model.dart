@@ -20,6 +20,9 @@ class GroceryListModel {
   late DateTime scheduledFor;
   late DateTime createdAt;
 
+  /// Nullable: absent on older rows / lists that have never been overdue.
+  DateTime? lastMissedOn;
+
   List<GroceryItemModel> items = [];
 
   GroceryList toDomain() => GroceryList(
@@ -28,6 +31,7 @@ class GroceryListModel {
         frequency: frequency.toDomain(),
         scheduledFor: scheduledFor,
         createdAt: createdAt,
+        lastMissedOn: lastMissedOn,
         items: items.map((i) => i.toDomain()).toList(growable: false),
       );
 }

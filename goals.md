@@ -36,8 +36,8 @@ and should say so.
       order is still a stub — `pageOrder` persists but Home does not reorder).
 - [x] Fixed-height, text-scale-respecting layouts.
 - [x] Add Item / Voice Input buttons and modals.
-- [ ] **Complete Shopping** — button exists; behavior still a stub (SnackBar
-      only). Real behavior specified in `ROADMAP.md` Feature A.
+- [x] **Complete Shopping** — uncheck all, pop Home, advance recurring or
+      delete one-time (`ROADMAP.md` Feature A).
 - [x] Real-time updates: writes stream to UI with no manual refresh.
 - [x] Local storage via Isar.
 - [x] API images (Pexels) with fallback icons — wired end-to-end on add item.
@@ -73,14 +73,13 @@ and should say so.
 
 These were deferred; product decisions are now locked in `ROADMAP.md`:
 
-- [ ] **Complete Shopping** — uncheck all, pop Home, advance recurring date
+- [x] **Complete Shopping** — uncheck all, pop Home, advance recurring date
       or delete one-time list.
-- [ ] **Startup schedule reconciliation** — on app open, roll overdue
+- [x] **Startup schedule reconciliation** — on app open, roll overdue
       recurring dates forward, flag missed one-time lists without deleting,
       show a uniform "Last date missed" indicator.
 
-Do not implement these ad hoc in widgets — follow `ROADMAP.md` layering and
-the persisted-miss-flag rule.
+See `ROADMAP.md` for locked rules and file map.
 
 ## 4. Known limitations (status)
 
@@ -88,12 +87,12 @@ the persisted-miss-flag rule.
 |---|---|
 | Push notifications | Not started (see §3) |
 | Item suggestion dropdown | Not started (see §3) |
-| Automatic list date updates | **Planned** — see `ROADMAP.md`; building block exists (`nextOccurrence`) |
-| Complete Shopping real behavior | **Planned** — UI stub only today |
+| Automatic list date updates | **Done** — startup reconcile + `lastMissedOn` (`ROADMAP.md`) |
+| Complete Shopping real behavior | **Done** — usecase + one-txn finalize / delete |
 | Voice input minor quirks | Contained — transcript editable before commit |
 | Image source "view photographer" deep link | Unbuilt; fallback widget is fine |
 | Checkbox drift | Structurally addressed; covered by list stream + controller path |
-| Monthly date edge cases beyond Jan | Partially tested; harden before schedule reconciliation |
+| Monthly date edge cases beyond Jan | **Hardened** — clamp + tests (Mar/May/Aug/Dec, leap) |
 
 ## 5. Definition of foundation-complete
 
@@ -105,5 +104,5 @@ This foundation is complete when an agent can:
 3. Hand the repo to another engineer with `skills.md`, `architecture.md`,
    and `ROADMAP.md` as onboarding material.
 
-Learning exercises in `EXERCISES.md` are complete. Product polish
-(complete shopping + reconciliation) is the next deliverable.
+Learning exercises in `EXERCISES.md` are complete. Complete Shopping and
+schedule reconciliation are shipped per `ROADMAP.md`.

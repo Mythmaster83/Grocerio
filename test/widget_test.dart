@@ -1,23 +1,20 @@
-// WORKED EXAMPLE for Exercise 1 — read every comment, then write your own
-// second test at the bottom (see the TODO).
-//
-// The big idea of a widget test:
-//   1. Build ONE screen in a fake, in-memory environment (no device needed).
-//   2. Replace real dependencies (database streams) with fakes via
-//      ProviderScope(overrides: [...]). The screen can't tell the difference.
-//   3. Assert that what the user WOULD see is actually on screen.
-//
-// This is why layering matters: HomeScreen only knows about
-// `listsStreamProvider`, so we can swap in a fake stream here. If the widget
-// talked to Isar directly, we couldn't test it without a real database.
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:grocer/features/lists/domain/entities/grocery_list.dart';
+import 'package:grocer/features/lists/presentation/providers/lists_di.dart';
 import 'package:grocer/features/lists/presentation/providers/lists_provider.dart';
 import 'package:grocer/features/lists/presentation/screens/home_screen.dart';
 import 'package:grocer/features/scheduling/domain/entities/schedule_frequency.dart';
+
+List<Override> _homeOverrides({
+  required Stream<List<GroceryList>> lists,
+}) =>
+    [
+      listsStreamProvider.overrideWith((ref) => lists),
+      // Home watches reconcile once at open — stub it so widget tests need no Isar.
+      reconcileSchedulesProvider.overrideWith((ref) async {}),
+    ];
 
 void main() {
   testWidgets('HomeScreen shows the empty state when there are no lists',
@@ -26,11 +23,9 @@ void main() {
     // one value: an empty list. No Isar, no disk, no network.
     await tester.pumpWidget(
       ProviderScope(
-        overrides: [
-          listsStreamProvider.overrideWith(
-            (ref) => Stream.value(const <GroceryList>[]),
-          ),
-        ],
+        overrides: _homeOverrides(
+          lists: Stream.value(const <GroceryList>[]),
+        ),
         // MaterialApp provides theme/navigation that Scaffold needs.
         child: const MaterialApp(home: HomeScreen()),
       ),
@@ -61,11 +56,9 @@ void main() {
 
     await tester.pumpWidget(
       ProviderScope(
-        overrides: [
-          listsStreamProvider.overrideWith(
-            (ref) => Stream.value(<GroceryList>[groceries]),
-          ),
-        ],
+        overrides: _homeOverrides(
+          lists: Stream.value(<GroceryList>[groceries]),
+        ),
         child: const MaterialApp(home: HomeScreen()),
       ),
     );
@@ -80,11 +73,9 @@ void main() {
       (WidgetTester tester) async {
     await tester.pumpWidget(
       ProviderScope(
-        overrides: [
-          listsStreamProvider.overrideWith(
-            (ref) => Stream<List<GroceryList>>.error('boom'),
-          ),
-        ],
+        overrides: _homeOverrides(
+          lists: Stream<List<GroceryList>>.error('boom'),
+        ),
         child: const MaterialApp(home: HomeScreen()),
       ),
     );

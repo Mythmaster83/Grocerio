@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../preferences/presentation/screens/settings_screen.dart';
+import '../providers/list_actions_controller.dart';
+import '../providers/lists_di.dart';
 import '../providers/lists_provider.dart';
 import '../widgets/create_list_modal.dart';
 import '../widgets/list_card.dart';
+import '../widgets/missed_date_indicator.dart';
 import 'list_detail_screen.dart';
 
 /// Home shows every list as a card grid/list. This screen owns ZERO
@@ -17,6 +20,9 @@ class HomeScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // Kick off overdue date reconciliation once per app open.
+    ref.watch(reconcileSchedulesProvider);
+
     final listsAsync = ref.watch(listsStreamProvider);
 
     return Scaffold(
@@ -47,8 +53,20 @@ class HomeScreen extends ConsumerWidget {
                 return ListCard(
                   list: list,
                   onTap: () => Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => ListDetailScreen(listId: list.id)),
+                    MaterialPageRoute(
+                      builder: (_) => ListDetailScreen(listId: list.id),
+                    ),
                   ),
+                  onMissedTap: list.hasMissedDate
+                      ? () => showMissedDateDialog(
+                            context: context,
+                            onAcknowledge: () async {
+                              await ref
+                                  .read(listActionsControllerProvider.notifier)
+                                  .clearLastMissedOn(list.id);
+                            },
+                          )
+                      : null,
                 );
               },
             ),
@@ -78,7 +96,8 @@ class _EmptyState extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.shopping_basket_outlined, size: 56, color: theme.colorScheme.outline),
+            Icon(Icons.shopping_basket_outlined,
+                size: 56, color: theme.colorScheme.outline),
             const SizedBox(height: 16),
             Text('No lists yet', style: theme.textTheme.titleMedium),
             const SizedBox(height: 8),

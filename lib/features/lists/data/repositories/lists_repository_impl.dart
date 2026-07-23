@@ -23,6 +23,28 @@ class ListsRepositoryImpl implements ListsRepository {
       _local.watchList(listId).map((m) => m?.toDomain());
 
   @override
+  Future<Result<List<GroceryList>>> getAllLists() async {
+    try {
+      final models = await _local.getAllLists();
+      return Result.ok(models.map((m) => m.toDomain()).toList());
+    } on StorageException catch (e, st) {
+      logger.error(e.message, e.cause, st);
+      return Result.err(StorageFailure('Could not load lists.', cause: e));
+    }
+  }
+
+  @override
+  Future<Result<GroceryList?>> getList(String listId) async {
+    try {
+      final model = await _local.getList(listId);
+      return Result.ok(model?.toDomain());
+    } on StorageException catch (e, st) {
+      logger.error(e.message, e.cause, st);
+      return Result.err(StorageFailure('Could not load the list.', cause: e));
+    }
+  }
+
+  @override
   Future<Result<GroceryList>> createList({
     required String name,
     required DateTime scheduledFor,
@@ -134,6 +156,78 @@ class ListsRepositoryImpl implements ListsRepository {
     } on StorageException catch (e, st) {
       logger.error(e.message, e.cause, st);
       return Result.err(StorageFailure('Could not delete the item.', cause: e));
+    }
+  }
+
+  @override
+  Future<Result<void>> finalizeShoppingTrip({
+    required String listId,
+    required DateTime newScheduledFor,
+  }) async {
+    try {
+      await _local.finalizeShoppingTrip(
+        listPublicId: listId,
+        newScheduledFor: newScheduledFor,
+      );
+      return const Result.ok(null);
+    } on StorageException catch (e, st) {
+      logger.error(e.message, e.cause, st);
+      return Result.err(
+        StorageFailure('Could not complete shopping.', cause: e),
+      );
+    }
+  }
+
+  @override
+  Future<Result<void>> applyScheduleReconciliation({
+    required String listId,
+    required DateTime scheduledFor,
+    required DateTime lastMissedOn,
+  }) async {
+    try {
+      await _local.applyScheduleReconciliation(
+        listPublicId: listId,
+        scheduledFor: scheduledFor,
+        lastMissedOn: lastMissedOn,
+      );
+      return const Result.ok(null);
+    } on StorageException catch (e, st) {
+      logger.error(e.message, e.cause, st);
+      return Result.err(
+        StorageFailure('Could not update the schedule.', cause: e),
+      );
+    }
+  }
+
+  @override
+  Future<Result<void>> flagMissedDate({
+    required String listId,
+    required DateTime lastMissedOn,
+  }) async {
+    try {
+      await _local.flagMissedDate(
+        listPublicId: listId,
+        lastMissedOn: lastMissedOn,
+      );
+      return const Result.ok(null);
+    } on StorageException catch (e, st) {
+      logger.error(e.message, e.cause, st);
+      return Result.err(
+        StorageFailure('Could not flag the missed date.', cause: e),
+      );
+    }
+  }
+
+  @override
+  Future<Result<void>> clearLastMissedOn(String listId) async {
+    try {
+      await _local.clearLastMissedOn(listId);
+      return const Result.ok(null);
+    } on StorageException catch (e, st) {
+      logger.error(e.message, e.cause, st);
+      return Result.err(
+        StorageFailure('Could not clear the missed-date notice.', cause: e),
+      );
     }
   }
 }

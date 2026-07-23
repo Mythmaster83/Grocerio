@@ -98,6 +98,20 @@ class ListActionsController extends AsyncNotifier<void> {
     return _settle(result);
   }
 
+  Future<bool> completeShopping(String listId) async {
+    state = const AsyncLoading();
+    final usecase = ref.read(completeShoppingProvider);
+    final result = await usecase(listId);
+    return _settle(result);
+  }
+
+  Future<bool> clearLastMissedOn(String listId) async {
+    state = const AsyncLoading();
+    final repo = ref.read(listsRepositoryProvider);
+    final result = await repo.clearLastMissedOn(listId);
+    return _settle(result);
+  }
+
   bool _settle<T>(Result<T> result) {
     return result.when(
       ok: (_) {

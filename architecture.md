@@ -186,10 +186,9 @@ worth doing.
 **Still deferred** (see `goals.md` §3): push notifications, item suggestion
 dropdown, full offline-first sync, certificate pinning, backend API-key proxy.
 
-**Next increment** (authoritative plan: `ROADMAP.md`): Complete Shopping
-behavior and startup schedule reconciliation (overdue rollover + persisted
-miss indicator). Do not re-defer these as "out of scope" without updating
-`goals.md` and `ROADMAP.md` together.
+**Shipped this increment** (record: `ROADMAP.md`): Complete Shopping and
+startup schedule reconciliation (`lastMissedOn`, shared miss UI, pure plans
+in `schedule_rules.dart`). Monthly `nextOccurrence` clamps to month-end.
 
-**Prerequisite before reconciliation ships:** harden
-`ScheduleFrequency.nextOccurrence` month-end clamping (tests beyond January).
+Do not re-defer those as "out of scope" without updating `goals.md` and
+`ROADMAP.md` together.

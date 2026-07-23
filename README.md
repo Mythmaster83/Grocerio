@@ -54,8 +54,7 @@ lib/
 
 ## Current product gaps (intentional)
 
-- **Complete Shopping** is still a confirm + SnackBar stub.
-- **Overdue dates** are not auto-reconciled; no "missed" indicator yet.
 - **Home pageOrder** persists but is not a drag-reorder UI.
 
-See `ROADMAP.md` for how those will be built without breaking layering.
+Complete Shopping and overdue/missed-date reconciliation are shipped — see
+`ROADMAP.md`.

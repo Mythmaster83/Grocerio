@@ -12,6 +12,10 @@ abstract class ListsRepository {
 
   Stream<GroceryList?> watchList(String listId);
 
+  Future<Result<List<GroceryList>>> getAllLists();
+
+  Future<Result<GroceryList?>> getList(String listId);
+
   Future<Result<GroceryList>> createList({
     required String name,
     required DateTime scheduledFor,
@@ -41,4 +45,23 @@ abstract class ListsRepository {
     required String listId,
     required String itemId,
   });
+
+  /// Uncheck all items, set next [newScheduledFor], clear miss flag.
+  Future<Result<void>> finalizeShoppingTrip({
+    required String listId,
+    required DateTime newScheduledFor,
+  });
+
+  Future<Result<void>> applyScheduleReconciliation({
+    required String listId,
+    required DateTime scheduledFor,
+    required DateTime lastMissedOn,
+  });
+
+  Future<Result<void>> flagMissedDate({
+    required String listId,
+    required DateTime lastMissedOn,
+  });
+
+  Future<Result<void>> clearLastMissedOn(String listId);
 }

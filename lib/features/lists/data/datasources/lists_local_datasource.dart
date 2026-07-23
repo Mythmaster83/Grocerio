@@ -31,6 +31,12 @@ class ListsLocalDataSource {
   Future<GroceryListModel?> _findByPublicId(String publicId) =>
       _isar.groceryListModels.filter().publicIdEqualTo(publicId).findFirst();
 
+  Future<List<GroceryListModel>> getAllLists() =>
+      _isar.groceryListModels.where().findAll();
+
+  Future<GroceryListModel?> getList(String publicId) =>
+      _findByPublicId(publicId);
+
   Future<GroceryListModel> createList({
     required String name,
     required DateTime scheduledFor,
@@ -42,6 +48,7 @@ class ListsLocalDataSource {
       ..frequency = frequency
       ..scheduledFor = scheduledFor
       ..createdAt = DateTime.now()
+      ..lastMissedOn = null
       ..items = [];
     try {
       await _isar.writeTxn(() => _isar.groceryListModels.put(model));
@@ -147,6 +154,95 @@ class ListsLocalDataSource {
     } catch (e) {
       if (e is StorageException) rethrow;
       throw StorageException('Failed to delete item', cause: e);
+    }
+  }
+
+  /// Uncheck every item, advance [scheduledFor], clear miss flag — one txn.
+  Future<void> finalizeShoppingTrip({
+    required String listPublicId,
+    required DateTime newScheduledFor,
+  }) async {
+    try {
+      await _isar.writeTxn(() async {
+        final model = await _findByPublicId(listPublicId);
+        if (model == null) {
+          throw StorageException('List not found: $listPublicId');
+        }
+        final now = DateTime.now();
+        model.scheduledFor = newScheduledFor;
+        model.lastMissedOn = null;
+        model.items = [
+          for (final i in model.items)
+            GroceryItemModel()
+              ..id = i.id
+              ..name = i.name
+              ..quantity = i.quantity
+              ..unit = i.unit
+              ..isChecked = false
+              ..imageUrl = i.imageUrl
+              ..updatedAt = now,
+        ];
+        await _isar.groceryListModels.put(model);
+      });
+    } catch (e) {
+      if (e is StorageException) rethrow;
+      throw StorageException('Failed to complete shopping', cause: e);
+    }
+  }
+
+  Future<void> applyScheduleReconciliation({
+    required String listPublicId,
+    required DateTime scheduledFor,
+    required DateTime lastMissedOn,
+  }) async {
+    try {
+      await _isar.writeTxn(() async {
+        final model = await _findByPublicId(listPublicId);
+        if (model == null) {
+          throw StorageException('List not found: $listPublicId');
+        }
+        model.scheduledFor = scheduledFor;
+        model.lastMissedOn = lastMissedOn;
+        await _isar.groceryListModels.put(model);
+      });
+    } catch (e) {
+      if (e is StorageException) rethrow;
+      throw StorageException('Failed to reconcile schedule', cause: e);
+    }
+  }
+
+  Future<void> flagMissedDate({
+    required String listPublicId,
+    required DateTime lastMissedOn,
+  }) async {
+    try {
+      await _isar.writeTxn(() async {
+        final model = await _findByPublicId(listPublicId);
+        if (model == null) {
+          throw StorageException('List not found: $listPublicId');
+        }
+        model.lastMissedOn = lastMissedOn;
+        await _isar.groceryListModels.put(model);
+      });
+    } catch (e) {
+      if (e is StorageException) rethrow;
+      throw StorageException('Failed to flag missed date', cause: e);
+    }
+  }
+
+  Future<void> clearLastMissedOn(String listPublicId) async {
+    try {
+      await _isar.writeTxn(() async {
+        final model = await _findByPublicId(listPublicId);
+        if (model == null) {
+          throw StorageException('List not found: $listPublicId');
+        }
+        model.lastMissedOn = null;
+        await _isar.groceryListModels.put(model);
+      });
+    } catch (e) {
+      if (e is StorageException) rethrow;
+      throw StorageException('Failed to clear missed date', cause: e);
     }
   }
 }

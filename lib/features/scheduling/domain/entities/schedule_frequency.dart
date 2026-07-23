@@ -12,7 +12,11 @@ extension ScheduleFrequencyX on ScheduleFrequency {
       };
 
   /// Computes the next occurrence from [from]. Pure function, no I/O — easy
-  /// to unit test and reused by the (future) notifications scheduler.
+  /// to unit test and reused by schedule reconciliation / Complete Shopping.
+  ///
+  /// Monthly advances by calendar month and **clamps** the day to the last
+  /// valid day of the target month (e.g. Jan 31 → Feb 28/29, Mar 31 → Apr 30).
+  /// Without clamping, Dart's `DateTime(y, m, d)` overflows into the next month.
   DateTime? nextOccurrence(DateTime from) {
     switch (this) {
       case ScheduleFrequency.oneTime:
@@ -22,15 +26,18 @@ extension ScheduleFrequencyX on ScheduleFrequency {
       case ScheduleFrequency.biweekly:
         return from.add(const Duration(days: 14));
       case ScheduleFrequency.monthly:
-        if (from.month == 1 && from.day > 28) {
-          if (from.year % 4 == 0) {
-            return DateTime(from.year, 2, 29);
-          } else {
-            return DateTime(from.year, 2, 28);
-          }
-        } else {
-          return DateTime(from.year, from.month+1, from.day);
-        }
+        return _addCalendarMonths(from, 1);
     }
   }
+}
+
+/// Adds [months] calendar months to [from], clamping the day to the last day
+/// of the resulting month when needed.
+DateTime _addCalendarMonths(DateTime from, int months) {
+  final totalMonths = from.year * 12 + (from.month - 1) + months;
+  final year = totalMonths ~/ 12;
+  final month = (totalMonths % 12) + 1;
+  final lastDay = DateTime(year, month + 1, 0).day;
+  final day = from.day > lastDay ? lastDay : from.day;
+  return DateTime(year, month, day);
 }

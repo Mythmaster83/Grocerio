@@ -5,17 +5,25 @@ import 'package:intl/intl.dart';
 // directly; they do NOT travel transitively through grocery_list.dart.
 import '../../../scheduling/domain/entities/schedule_frequency.dart';
 import '../../domain/entities/grocery_list.dart';
+import 'missed_date_indicator.dart';
 
 class ListCard extends StatelessWidget {
   final GroceryList list;
   final VoidCallback onTap;
+  final VoidCallback? onMissedTap;
 
-  const ListCard({super.key, required this.list, required this.onTap});
+  const ListCard({
+    super.key,
+    required this.list,
+    required this.onTap,
+    this.onMissedTap,
+  });
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final progress = list.items.isEmpty ? 0.0 : list.completedCount / list.items.length;
+    final progress =
+        list.items.isEmpty ? 0.0 : list.completedCount / list.items.length;
 
     return Card(
       child: InkWell(
@@ -28,10 +36,15 @@ class ListCard extends StatelessWidget {
             children: [
               Row(
                 children: [
+                  if (list.hasMissedDate && onMissedTap != null) ...[
+                    MissedDateIndicator(onTap: onMissedTap!),
+                    const SizedBox(width: 4),
+                  ],
                   Expanded(
                     child: Text(
                       list.name,
-                      style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+                      style: theme.textTheme.titleMedium
+                          ?.copyWith(fontWeight: FontWeight.w600),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -83,7 +96,11 @@ class _FrequencyChip extends StatelessWidget {
       ),
       child: Text(
         label,
-        style: TextStyle(fontSize: 11, color: scheme.onSecondaryContainer, fontWeight: FontWeight.w600),
+        style: TextStyle(
+          fontSize: 11,
+          color: scheme.onSecondaryContainer,
+          fontWeight: FontWeight.w600,
+        ),
       ),
     );
   }

@@ -6,6 +6,7 @@ import '../providers/list_actions_controller.dart';
 import '../providers/lists_provider.dart';
 import '../widgets/add_item_modal.dart';
 import '../widgets/item_tile.dart';
+import '../widgets/missed_date_indicator.dart';
 
 class ListDetailScreen extends ConsumerWidget {
   final String listId;
@@ -15,14 +16,19 @@ class ListDetailScreen extends ConsumerWidget {
     final confirmed = await showConfirmDialog(
       context,
       title: 'Complete shopping?',
-      message: 'This marks the trip as done. You can still edit items afterward.',
+      message:
+          'Unchecks all items and returns home. Recurring lists move to the '
+          'next planned date; one-time lists are deleted.',
       confirmLabel: 'Complete',
       isDestructive: false,
     );
-    if (confirmed && context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Shopping trip completed 🎉')),
-      );
+    if (!confirmed || !context.mounted) return;
+
+    final ok = await ref
+        .read(listActionsControllerProvider.notifier)
+        .completeShopping(listId);
+    if (ok && context.mounted) {
+      Navigator.of(context).pop();
     }
   }
 
@@ -50,16 +56,37 @@ class ListDetailScreen extends ConsumerWidget {
           orElse: () => const Text('List'),
         ),
         actions: [
+          listAsync.maybeWhen(
+            data: (list) {
+              if (list == null || !list.hasMissedDate) {
+                return const SizedBox.shrink();
+              }
+              return MissedDateIndicator(
+                onTap: () => showMissedDateDialog(
+                  context: context,
+                  onAcknowledge: () async {
+                    await ref
+                        .read(listActionsControllerProvider.notifier)
+                        .clearLastMissedOn(listId);
+                  },
+                ),
+              );
+            },
+            orElse: () => const SizedBox.shrink(),
+          ),
           IconButton(
             icon: const Icon(Icons.delete_outline),
             onPressed: () async {
               final confirmed = await showConfirmDialog(
                 context,
                 title: 'Delete list?',
-                message: 'This list and all its items will be permanently removed.',
+                message:
+                    'This list and all its items will be permanently removed.',
               );
               if (confirmed) {
-                await ref.read(listActionsControllerProvider.notifier).deleteList(listId);
+                await ref
+                    .read(listActionsControllerProvider.notifier)
+                    .deleteList(listId);
                 if (context.mounted) Navigator.of(context).pop();
               }
             },
@@ -72,17 +99,20 @@ class ListDetailScreen extends ConsumerWidget {
             return const Center(child: Text('This list no longer exists.'));
           }
           if (list.items.isEmpty) {
-            return const Center(child: Text('No items yet — add your first one below.'));
+            return const Center(
+                child: Text('No items yet — add your first one below.'));
           }
           return ListView.separated(
             padding: const EdgeInsets.symmetric(vertical: 8),
             itemCount: list.items.length,
             separatorBuilder: (_, __) => const Divider(height: 1),
-            itemBuilder: (context, index) => ItemTile(listId: listId, item: list.items[index]),
+            itemBuilder: (context, index) =>
+                ItemTile(listId: listId, item: list.items[index]),
           );
         },
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, _) => Center(child: Text('Could not load this list: $error')),
+        error: (error, _) =>
+            Center(child: Text('Could not load this list: $error')),
       ),
       bottomNavigationBar: SafeArea(
         child: Padding(
