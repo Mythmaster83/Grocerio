@@ -1,0 +1,41 @@
+# --- Secrets: never commit real values ---
+.env
+key.env
+*.env.local
+
+# --- Flutter / Dart ---
+.dart_tool/
+.packages
+build/
+.flutter-plugins
+.flutter-plugins-dependencies
+.pub-cache/
+.pub/
+pubspec.lock
+
+# --- Generated code (regenerate with build_runner, don't hand-edit) ---
+**/*.g.dart
+
+# --- Isar database files (local dev data, never ship this) ---
+*.isar
+*.isar.lock
+
+# --- IDE ---
+.idea/
+.vscode/
+*.iml
+
+# --- Platform build artifacts ---
+android/app/debug
+android/app/profile
+android/app/release
+android/local.properties
+android/key.properties
+ios/Flutter/flutter_export_environment.sh
+ios/Runner/GeneratedPluginRegistrant.*
+*.keystore
+*.jks
+
+# --- OS ---
+.DS_Store
+Thumbs.db

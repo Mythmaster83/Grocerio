@@ -1,0 +1,4 @@
+# This folder exists only because pubspec.yaml declares `assets/fonts/`.
+# Fonts are currently fetched at runtime by the google_fonts package, so
+# nothing lives here yet. Keep this file so the directory is not empty
+# (Flutter's asset bundler errors on a declared-but-missing directory).

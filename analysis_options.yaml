@@ -1,0 +1,13 @@
+include: package:flutter_lints/flutter.yaml
+
+linter:
+  rules:
+    prefer_const_constructors: true
+    prefer_final_locals: true
+    avoid_print: true          # use core/utils/app_logger.dart instead
+    unawaited_futures: true    # catches accidentally-fire-and-forget writes
+    always_declare_return_types: true
+
+analyzer:
+  exclude:
+    - "**/*.g.dart"
