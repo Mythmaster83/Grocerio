@@ -30,7 +30,12 @@ abstract class ListsRepository {
     required double quantity,
     required int unitIndex,
     String? imageUrl,
+    String? imagePhotographer,
+    String? imagePhotographerUrl,
   });
+
+  /// Distinct item names matching [query] (case-insensitive prefix), newest-first feel via sort.
+  Future<Result<List<String>>> suggestItemNames(String query, {int limit = 8});
 
   Future<Result<void>> updateItem({
     required String listId,

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'core/theme/app_theme.dart';
-import 'features/lists/presentation/screens/home_screen.dart';
+import 'features/preferences/presentation/app_shell.dart';
 import 'features/preferences/presentation/providers/preferences_controller.dart';
 
 class GrocerApp extends ConsumerWidget {
@@ -45,7 +45,7 @@ class GrocerApp extends ConsumerWidget {
           child: child!,
         );
       },
-      home: const HomeScreen(),
+      home: const AppShell(),
     );
   }
 }

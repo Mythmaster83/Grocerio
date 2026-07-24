@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../preferences/presentation/screens/settings_screen.dart';
 import '../providers/list_actions_controller.dart';
 import '../providers/lists_di.dart';
 import '../providers/lists_provider.dart';
@@ -11,10 +10,9 @@ import 'list_detail_screen.dart';
 
 /// Home shows every list as a card grid/list. This screen owns ZERO
 /// business logic — it renders whatever listsStreamProvider emits and
-/// delegates every action to a modal or the actions controller. That is
-/// the acceptance test for "is state properly separated from UI": could
-/// you delete this file and rebuild an equivalent screen without touching
-/// anything under data/ or domain/? Yes.
+/// delegates every action to a modal or the actions controller.
+///
+/// Settings live on the shell tab (see AppShell); not pushed from here.
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
 
@@ -28,14 +26,6 @@ class HomeScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Your Lists'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.settings_outlined),
-            onPressed: () => Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const SettingsScreen()),
-            ),
-          ),
-        ],
       ),
       body: listsAsync.when(
         data: (lists) {

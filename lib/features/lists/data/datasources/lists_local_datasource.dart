@@ -56,6 +56,8 @@ class ListsLocalDataSource {
           ..unit = i.unit
           ..isChecked = uncheckAll ? false : i.isChecked
           ..imageUrl = i.imageUrl
+          ..imagePhotographer = i.imagePhotographer
+          ..imagePhotographerUrl = i.imagePhotographerUrl
           ..updatedAt = uncheckAll ? now : i.updatedAt,
     ];
   }
@@ -81,6 +83,29 @@ class ListsLocalDataSource {
           clearLastMissedOn ? null : (lastMissedOn ?? existing.lastMissedOn)
       ..items = items ?? _cloneItems(existing.items);
     await _isar.groceryListModels.put(copy);
+  }
+
+  Future<List<String>> suggestItemNames(String queryLower, {int limit = 8}) async {
+    try {
+      final lists = await getAllLists();
+      final seen = <String>{};
+      final matches = <String>[];
+      for (final list in lists) {
+        for (final item in list.items) {
+          final name = item.name.trim();
+          if (name.isEmpty) continue;
+          final key = name.toLowerCase();
+          if (!key.startsWith(queryLower)) continue;
+          if (seen.contains(key)) continue;
+          seen.add(key);
+          matches.add(name);
+          if (matches.length >= limit) return matches;
+        }
+      }
+      return matches;
+    } catch (e) {
+      throw StorageException('Failed to suggest item names', cause: e);
+    }
   }
 
   Future<GroceryListModel> createList({
@@ -121,6 +146,8 @@ class ListsLocalDataSource {
     required double quantity,
     required ItemUnitDb unit,
     String? imageUrl,
+    String? imagePhotographer,
+    String? imagePhotographerUrl,
   }) async {
     final item = GroceryItemModel()
       ..id = _uuid.v4()
@@ -129,6 +156,8 @@ class ListsLocalDataSource {
       ..unit = unit
       ..isChecked = false
       ..imageUrl = imageUrl
+      ..imagePhotographer = imagePhotographer
+      ..imagePhotographerUrl = imagePhotographerUrl
       ..updatedAt = DateTime.now();
 
     try {
@@ -175,6 +204,8 @@ class ListsLocalDataSource {
           ..unit = unit ?? existing.unit
           ..isChecked = isChecked ?? existing.isChecked
           ..imageUrl = existing.imageUrl
+          ..imagePhotographer = existing.imagePhotographer
+          ..imagePhotographerUrl = existing.imagePhotographerUrl
           ..updatedAt = DateTime.now();
 
         await _putListCopy(model, items: items);

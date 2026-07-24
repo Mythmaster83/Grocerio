@@ -129,7 +129,12 @@ class _ItemTileState extends ConsumerState<ItemTile> {
     return Row(
       children: [
         Checkbox(value: item.isChecked, onChanged: _toggleChecked),
-        NetworkImageWithFallback(imageUrl: item.imageUrl, size: 40),
+        NetworkImageWithFallback(
+          imageUrl: item.imageUrl,
+          photographerUrl: item.imagePhotographerUrl,
+          photographerName: item.imagePhotographer,
+          size: 40,
+        ),
         const SizedBox(width: 8),
         Expanded(
           child: Text(

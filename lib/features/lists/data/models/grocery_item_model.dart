@@ -20,6 +20,8 @@ class GroceryItemModel {
 
   late bool isChecked;
   String? imageUrl;
+  String? imagePhotographer;
+  String? imagePhotographerUrl;
   late DateTime updatedAt;
 
   GroceryItem toDomain() => GroceryItem(
@@ -29,6 +31,8 @@ class GroceryItemModel {
         unit: unit.toDomain(),
         isChecked: isChecked,
         imageUrl: imageUrl,
+        imagePhotographer: imagePhotographer,
+        imagePhotographerUrl: imagePhotographerUrl,
         updatedAt: updatedAt,
       );
 
@@ -39,6 +43,8 @@ class GroceryItemModel {
     ..unit = ItemUnitDbX.fromDomain(item.unit)
     ..isChecked = item.isChecked
     ..imageUrl = item.imageUrl
+    ..imagePhotographer = item.imagePhotographer
+    ..imagePhotographerUrl = item.imagePhotographerUrl
     ..updatedAt = item.updatedAt;
 }
 

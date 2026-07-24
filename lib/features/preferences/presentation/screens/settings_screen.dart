@@ -2,10 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/result.dart';
+import '../../domain/entities/app_preferences.dart';
 import '../providers/preferences_controller.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
+
+  static String _pageLabel(HomePage page) => switch (page) {
+        HomePage.lists => 'Lists',
+        HomePage.schedule => 'Schedule',
+        HomePage.settings => 'Settings',
+      };
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -38,7 +45,8 @@ class SettingsScreen extends ConsumerWidget {
                 ButtonSegment(value: ThemeMode.dark, label: Text('Dark')),
               ],
               selected: {ThemeMode.values[prefs.themeModeIndex]},
-              onSelectionChanged: (s) => controller.updatePrefs((p) => p.copyWith(themeModeIndex: s.first.index)),
+              onSelectionChanged: (s) => controller
+                  .updatePrefs((p) => p.copyWith(themeModeIndex: s.first.index)),
             ),
             const SizedBox(height: 24),
             Text('Accent color', style: Theme.of(context).textTheme.titleMedium),
@@ -46,13 +54,18 @@ class SettingsScreen extends ConsumerWidget {
             Wrap(
               spacing: 12,
               children: AppTheme.accentPalette.map((color) {
-                final selected = Color(prefs.accentColorValue).toARGB32() == color.toARGB32();
+                final selected =
+                    Color(prefs.accentColorValue).toARGB32() == color.toARGB32();
                 return GestureDetector(
-                  onTap: () => controller.updatePrefs((p) => p.copyWith(accentColorValue: color.toARGB32())),
+                  onTap: () => controller.updatePrefs(
+                    (p) => p.copyWith(accentColorValue: color.toARGB32()),
+                  ),
                   child: CircleAvatar(
                     backgroundColor: color,
                     radius: 20,
-                    child: selected ? const Icon(Icons.check, color: Colors.white) : null,
+                    child: selected
+                        ? const Icon(Icons.check, color: Colors.white)
+                        : null,
                   ),
                 );
               }).toList(),
@@ -65,7 +78,8 @@ class SettingsScreen extends ConsumerWidget {
               max: 1.4,
               divisions: 11,
               label: '${(prefs.textScale * 100).round()}%',
-              onChanged: (v) => controller.updatePrefs((p) => p.copyWith(textScale: v)),
+              onChanged: (v) =>
+                  controller.updatePrefs((p) => p.copyWith(textScale: v)),
             ),
             const SizedBox(height: 12),
             Text('Font', style: Theme.of(context).textTheme.titleMedium),
@@ -76,7 +90,43 @@ class SettingsScreen extends ConsumerWidget {
                   .map((f) => DropdownMenuItem(value: f, child: Text(f)))
                   .toList(),
               onChanged: (f) {
-                if (f != null) controller.updatePrefs((p) => p.copyWith(fontFamily: f));
+                if (f != null) {
+                  controller.updatePrefs((p) => p.copyWith(fontFamily: f));
+                }
+              },
+            ),
+            const SizedBox(height: 24),
+            Text('Home page order',
+                style: Theme.of(context).textTheme.titleMedium),
+            const SizedBox(height: 4),
+            Text(
+              'Drag to change the order of tabs at the bottom of the app.',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+            ),
+            const SizedBox(height: 8),
+            ReorderableListView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              buildDefaultDragHandles: false,
+              itemCount: prefs.pageOrder.length,
+              onReorderItem: (oldIndex, newIndex) {
+                final order = List<HomePage>.from(prefs.pageOrder);
+                final item = order.removeAt(oldIndex);
+                order.insert(newIndex, item);
+                controller.setPageOrder(order);
+              },
+              itemBuilder: (context, index) {
+                final page = prefs.pageOrder[index];
+                return ListTile(
+                  key: ValueKey(page),
+                  title: Text(_pageLabel(page)),
+                  leading: ReorderableDragStartListener(
+                    index: index,
+                    child: const Icon(Icons.drag_handle),
+                  ),
+                );
               },
             ),
           ],

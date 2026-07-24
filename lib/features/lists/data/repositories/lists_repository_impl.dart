@@ -88,6 +88,8 @@ class ListsRepositoryImpl implements ListsRepository {
     required double quantity,
     required int unitIndex,
     String? imageUrl,
+    String? imagePhotographer,
+    String? imagePhotographerUrl,
   }) async {
     final cleanName = InputSanitizer.sanitizeFreeText(
       name,
@@ -105,12 +107,27 @@ class ListsRepositoryImpl implements ListsRepository {
         name: cleanName,
         quantity: quantity,
         unit: ItemUnitDb.values[unitIndex],
-        imageUrl: imageUrl
+        imageUrl: imageUrl,
+        imagePhotographer: imagePhotographer,
+        imagePhotographerUrl: imagePhotographerUrl,
       );
       return Result.ok(model.toDomain());
     } on StorageException catch (e, st) {
       logger.error(e.message, e.cause, st);
       return Result.err(StorageFailure('Could not add the item.', cause: e));
+    }
+  }
+
+  @override
+  Future<Result<List<String>>> suggestItemNames(String query, {int limit = 8}) async {
+    final q = query.trim().toLowerCase();
+    if (q.isEmpty) return const Result.ok([]);
+    try {
+      final names = await _local.suggestItemNames(q, limit: limit);
+      return Result.ok(names);
+    } on StorageException catch (e, st) {
+      logger.error(e.message, e.cause, st);
+      return Result.err(StorageFailure('Could not load suggestions.', cause: e));
     }
   }
 
