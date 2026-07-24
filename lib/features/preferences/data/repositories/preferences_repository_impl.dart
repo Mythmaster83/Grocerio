@@ -37,8 +37,31 @@ class PreferencesRepositoryImpl implements PreferencesRepository{
     accentColorValue: m.accentColorValue,
     fontFamily: m.fontFamily,
     textScale: m.textScale,
-    pageOrder: m.pageOrderIndices.map((i) => HomePage.values[i]).toList(),
+    pageOrder: _pageOrderFromStoredIndices(m.pageOrderIndices),
   );
+
+  /// Maps stored indices → [HomePage], dropping the removed Schedule tab.
+  ///
+  /// Legacy enum was `lists=0, schedule=1, settings=2`. Current is
+  /// `lists=0, settings=1`. If a `2` is present we treat `1` as the old
+  /// schedule slot and ignore it; otherwise `1` means settings.
+  static List<HomePage> _pageOrderFromStoredIndices(List<int> indices) {
+    final hasLegacySettings = indices.contains(2);
+    final order = <HomePage>[];
+    for (final i in indices) {
+      if (i == 0) {
+        order.add(HomePage.lists);
+      } else if (i == 2) {
+        order.add(HomePage.settings);
+      } else if (i == 1 && !hasLegacySettings) {
+        order.add(HomePage.settings);
+      }
+    }
+    for (final page in HomePage.values) {
+      if (!order.contains(page)) order.add(page);
+    }
+    return order;
+  }
 
   PreferencesModel _fromDomain(AppPreferences p) => PreferencesModel()
     ..isarId = 0

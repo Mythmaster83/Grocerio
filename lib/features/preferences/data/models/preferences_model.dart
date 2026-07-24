@@ -22,5 +22,5 @@ class PreferencesModel {
     ..accentColorValue = 0xFF2F6F4F
     ..fontFamily = 'Inter'
     ..textScale = 1.0
-    ..pageOrderIndices = const [0, 1, 2];
+    ..pageOrderIndices = const [0, 1]; // lists, settings
 }

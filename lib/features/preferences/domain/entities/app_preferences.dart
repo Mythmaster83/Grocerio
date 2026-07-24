@@ -1,6 +1,6 @@
 import 'package:equatable/equatable.dart';
 
-enum HomePage { lists, schedule, settings }
+enum HomePage { lists, settings }
 
 class AppPreferences extends Equatable {
   final int themeModeIndex;
@@ -22,7 +22,7 @@ class AppPreferences extends Equatable {
         accentColorValue: 0xFF2F6F4F,
         fontFamily: 'Inter',
         textScale: 1.0,
-        pageOrder: [HomePage.lists, HomePage.schedule, HomePage.settings],
+        pageOrder: [HomePage.lists, HomePage.settings],
       );
 
   AppPreferences copyWith({
@@ -42,5 +42,6 @@ class AppPreferences extends Equatable {
   }
 
   @override
-  List<Object?> get props => [themeModeIndex, accentColorValue, fontFamily, textScale, pageOrder];
+  List<Object?> get props =>
+      [themeModeIndex, accentColorValue, fontFamily, textScale, pageOrder];
 }

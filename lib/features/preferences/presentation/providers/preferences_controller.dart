@@ -31,6 +31,9 @@ class PreferencesController extends AsyncNotifier<AppPreferences> {
       },
     );
   }
+
+  Future<void> setPageOrder(List<HomePage> order) =>
+      updatePrefs((p) => p.copyWith(pageOrder: List<HomePage>.from(order)));
 }
 
 final preferencesControllerProvider =

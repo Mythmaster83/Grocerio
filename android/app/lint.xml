@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Flutter apps set versionCode/versionName and minSdk in Gradle, not the
+  legacy <manifest> attributes. Without a full Android Studio Gradle sync,
+  the IDE often reports "Unknown attribute" / "minSdk is 1" / unresolved
+  Flutter plugin classes — those are analyzer noise, not ship blockers.
+-->
+<lint>
+    <issue id="MissingVersion" severity="ignore" />
+    <issue id="UnusedAttribute" severity="ignore" />
+    <issue id="MissingClass" severity="ignore" />
+</lint>

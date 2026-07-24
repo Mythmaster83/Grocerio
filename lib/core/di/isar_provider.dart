@@ -19,7 +19,7 @@ final isarProvider = Provider<Isar>((ref) {
 
 /// Bumped when the on-disk schema changes in a way that can corrupt old rows
 /// (e.g. adding `lastMissedOn`). Alpha: start a fresh DB rather than migrate.
-const _isarDbName = 'grocer_v2';
+const _isarDbName = 'grocer_v3';
 
 Future<Isar> openAppIsar() async {
   final dir = await getApplicationDocumentsDirectory();
@@ -46,9 +46,8 @@ Future<Isar> openAppIsar() async {
 }
 
 Future<void> _deleteLegacyDbIfPresent(String directory) async {
-  // Pre-v2 used Isar's default name ("default"). Leave those files behind
-  // rather than risk reading rows written before lastMissedOn existed.
-  for (final name in ['default', 'grocer']) {
+  // Wipe older alpha DB names so schema bumps do not corrupt embedded rows.
+  for (final name in ['default', 'grocer', 'grocer_v2']) {
     await _deleteIsarFiles(directory, name);
   }
 }

@@ -1,0 +1,26 @@
+{
+  "name": "grocer-image-proxy",
+  "main": "src/index.js",
+  "compatibility_date": "2024-11-01",
+  // Set the Pexels key (do not commit secrets):
+  //   npx wrangler secret put PEXELS_API_KEY
+  // Deploy:
+  //   npx wrangler deploy
+  // Then set in the Flutter app .env:
+  //   API_BASE_URL=https://grocer-image-proxy.<your-subdomain>.workers.dev
+  "observability": {
+    "enabled": false,
+    "head_sampling_rate": 1,
+    "logs": {
+      "enabled": true,
+      "head_sampling_rate": 1,
+      "persist": true,
+      "invocation_logs": true
+    },
+    "traces": {
+      "enabled": false,
+      "persist": true,
+      "head_sampling_rate": 1
+    }
+  }
+}

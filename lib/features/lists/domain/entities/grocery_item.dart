@@ -13,6 +13,8 @@ class GroceryItem extends Equatable {
   final ItemUnit unit;
   final bool isChecked;
   final String? imageUrl;
+  final String? imagePhotographer;
+  final String? imagePhotographerUrl;
   final DateTime updatedAt;
 
   const GroceryItem({
@@ -23,6 +25,8 @@ class GroceryItem extends Equatable {
     required this.isChecked,
     required this.updatedAt,
     this.imageUrl,
+    this.imagePhotographer,
+    this.imagePhotographerUrl,
   });
 
   GroceryItem copyWith({
@@ -31,6 +35,8 @@ class GroceryItem extends Equatable {
     ItemUnit? unit,
     bool? isChecked,
     String? imageUrl,
+    String? imagePhotographer,
+    String? imagePhotographerUrl,
     DateTime? updatedAt,
   }) {
     return GroceryItem(
@@ -40,10 +46,22 @@ class GroceryItem extends Equatable {
       unit: unit ?? this.unit,
       isChecked: isChecked ?? this.isChecked,
       imageUrl: imageUrl ?? this.imageUrl,
+      imagePhotographer: imagePhotographer ?? this.imagePhotographer,
+      imagePhotographerUrl: imagePhotographerUrl ?? this.imagePhotographerUrl,
       updatedAt: updatedAt ?? DateTime.now(),
     );
   }
 
   @override
-  List<Object?> get props => [id, name, quantity, unit, isChecked, imageUrl, updatedAt];
+  List<Object?> get props => [
+        id,
+        name,
+        quantity,
+        unit,
+        isChecked,
+        imageUrl,
+        imagePhotographer,
+        imagePhotographerUrl,
+        updatedAt,
+      ];
 }

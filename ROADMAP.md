@@ -17,8 +17,12 @@ overdue / missed-date handling.
 | Preferences (theme, accent, font, text scale) layered | Works |
 | **Complete Shopping** | **Works** — uncheck all, pop Home, advance recurring / delete one-time |
 | **Overdue / missed date handling** | **Works** — startup reconcile + `lastMissedOn` + shared miss icon |
-| Page-order reorder UI | Still stub (data persists; Home does not reorder) |
+| Page-order reorder UI | **Works** — AppShell tabs + Settings drag (section order) |
 | Monthly `nextOccurrence` | **Hardened** — clamps to month-end for all months (not Jan-only) |
+| Local notifications (shopping day + miss) | **Works** (mobile; desktop no-ops) |
+| Local item-name autocomplete | **Works** (from existing items) |
+| Photographer attribution deep link | **Works** (tap/long-press image) |
+| Backend proxy / sync / cert pinning | Docs + stub only — `BACKEND_NEXT.md` |
 
 ---
 
@@ -107,7 +111,8 @@ overridden in `test/widget_test.dart`).
 
 ## Out of scope (still)
 
-- Push notifications when a date is missed
+- Remote FCM/APNs (local miss + shopping-day notifications are shipped)
 - Auto-complete shopping without user action
 - Changing frequency mid-cycle
 - Page-order drag UI
+- Live backend proxy / multi-device sync / cert pinning — see `BACKEND_NEXT.md`

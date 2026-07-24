@@ -32,6 +32,7 @@ class PexelsRemoteDataSource {
             thumbnailUrl: src['small'] as String? ?? '',
             fullUrl: src['medium'] as String? ?? '',
             photographer: p['photographer'] as String? ?? 'Unknown',
+            photographerUrl: p['photographer_url'] as String?,
           );
         }).where((r) => r.thumbnailUrl.isNotEmpty).toList();
       },

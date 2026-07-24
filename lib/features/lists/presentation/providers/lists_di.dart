@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/di/isar_provider.dart';
+import '../../../notifications/presentation/providers/notifications_di.dart';
 import '../../data/datasources/lists_local_datasource.dart';
 import '../../data/repositories/lists_repository_impl.dart';
 import '../../domain/repositories/lists_repository.dart';
@@ -34,11 +35,19 @@ final reconcileSchedulesUsecaseProvider = Provider<ReconcileSchedules>((ref) {
 /// Runs once per ProviderScope lifetime (typically once per app open).
 final reconcileSchedulesProvider = FutureProvider<void>((ref) async {
   final result = await ref.read(reconcileSchedulesUsecaseProvider)();
-  result.when(
-    ok: (_) {},
-    err: (failure) {
-      // Soft-fail preference: still throw so AsyncValue surfaces if watched
-      // with error UI; Home watches without blocking the list stream.
+  await result.when(
+    ok: (changes) async {
+      final scheduler = ref.read(listNotificationSchedulerProvider);
+      for (final change in changes) {
+        if (change.missed) {
+          await scheduler.notifyMissed(change.list);
+        }
+        if (change.advanced) {
+          await scheduler.scheduleForList(change.list);
+        }
+      }
+    },
+    err: (failure) async {
       throw failure;
     },
   );

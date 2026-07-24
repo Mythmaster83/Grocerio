@@ -31,9 +31,8 @@ and should say so.
 - [x] Scheduling: one-time / weekly / biweekly / monthly, with a
       scheduled date shown per list.
 - [x] Preferences: theme mode, accent color, font, text size, home page
-      order (data model + persistence done; **layered** like `lists/` —
-      repository + DI + pure-Dart domain ints; drag-to-reorder UI for page
-      order is still a stub — `pageOrder` persists but Home does not reorder).
+      order (layered like `lists/`; **AppShell** bottom nav follows
+      `pageOrder`; Settings drag-reorder persists).
 - [x] Fixed-height, text-scale-respecting layouts.
 - [x] Add Item / Voice Input buttons and modals.
 - [x] **Complete Shopping** — uncheck all, pop Home, advance recurring or
@@ -44,55 +43,40 @@ and should say so.
 - [x] API keys kept out of source control via `.gitignore` + `.env`.
 
 ## 3. Explicitly out of scope for this MVP (do not build without a
-      deliberate scope-change decision, not a "while I'm in here")
+      deliberate scope-change decision — see `BACKEND_NEXT.md`)
 
-- **Push notifications.** Requires a scheduling/permissions story
-  (`flutter_local_notifications` + platform permission prompts + a
-  decision about whether reminders fire even when the app is killed).
-  Non-trivial enough that bolting it on inside an unrelated feature PR is
-  how scope creep happens. Build it as its own feature module when
-  prioritized.
-- **Item suggestion dropdown** (autocomplete while typing an item name).
-  Needs a curated or learned suggestion source — trivial to build a bad
-  version (static list), not trivial to build a good one. Deferred rather
-  than shipped half-working.
-- **Backend proxy for the Pexels API key.** See `architecture.md` §5.1.
-  Not needed at current scope (no user accounts, no privileged API), but
-  it's the correct next step the moment either of those changes — flagged
-  here so it isn't rediscovered the hard way after a key gets scraped from
-  a shipped APK.
-- **Multi-device / shared-list sync.** Isar is local-only by design in
-  this foundation. This is the single largest architectural wall in the
-  codebase — see `architecture.md` §7. If "share a list with my partner"
-  becomes a requirement, that's a new project phase (remote source of
-  truth + conflict resolution), not an incremental feature.
-- **Certificate pinning.** Deferred until there's a stable backend host to
-  pin against.
+- **Remote push (FCM/APNs).** Local reminders are in scope for the polish
+  increment; server-delivered push is not.
+- **Backend proxy for the Pexels API key.** See `architecture.md` §5.1 and
+  `BACKEND_NEXT.md`. Still required before treating the key as non-extractable.
+- **Multi-device / shared-list sync.** Isar is local-only by design — see
+  `architecture.md` §7 and `BACKEND_NEXT.md`.
+- **Certificate pinning.** Deferred until there is a stable backend host to
+  pin against (`BACKEND_NEXT.md`).
 
-## 3b. Now in scope — next increment (`ROADMAP.md`)
+## 3b. Shipped increments
 
-These were deferred; product decisions are now locked in `ROADMAP.md`:
-
-- [x] **Complete Shopping** — uncheck all, pop Home, advance recurring date
-      or delete one-time list.
-- [x] **Startup schedule reconciliation** — on app open, roll overdue
-      recurring dates forward, flag missed one-time lists without deleting,
-      show a uniform "Last date missed" indicator.
-
-See `ROADMAP.md` for locked rules and file map.
+- [x] **Complete Shopping** + **startup schedule reconciliation** (`ROADMAP.md`).
+- [x] **Local polish**: release env fail-fast, photographer attribution,
+      local autocomplete, local notifications. `STORE_LISTING.md`.
+- [x] **AppShell page order**: Lists / Schedule / Settings tabs + Settings
+      drag-reorder. `SHIP_CHECKLIST.md`.
+- [x] **Image proxy worker source**: `backend/image-proxy/` (deploy + set
+      `API_BASE_URL` before store upload — see `BACKEND_NEXT.md`).
 
 ## 4. Known limitations (status)
 
 | Limitation | Status |
 |---|---|
-| Push notifications | Not started (see §3) |
-| Item suggestion dropdown | Not started (see §3) |
-| Automatic list date updates | **Done** — startup reconcile + `lastMissedOn` (`ROADMAP.md`) |
-| Complete Shopping real behavior | **Done** — usecase + one-txn finalize / delete |
+| Local shopping-day / miss notifications | **Done** (local; not FCM) |
+| Item suggestion dropdown | **Done** (local history only) |
+| Automatic list date updates | **Done** — startup reconcile + `lastMissedOn` |
+| Complete Shopping real behavior | **Done** |
 | Voice input minor quirks | Contained — transcript editable before commit |
-| Image source "view photographer" deep link | Unbuilt; fallback widget is fine |
-| Checkbox drift | Structurally addressed; covered by list stream + controller path |
-| Monthly date edge cases beyond Jan | **Hardened** — clamp + tests (Mar/May/Aug/Dec, leap) |
+| Photographer attribution deep link | **Done** |
+| Backend Pexels proxy / sync / cert pinning | Deferred — `BACKEND_NEXT.md` |
+| Checkbox drift | Structurally addressed |
+| Monthly date edge cases beyond Jan | **Hardened** |
 
 ## 5. Definition of foundation-complete
 
@@ -102,7 +86,8 @@ This foundation is complete when an agent can:
    folder structure, without needing to ask what pattern to follow.
 2. Run `flutter analyze` clean and `flutter test` green.
 3. Hand the repo to another engineer with `skills.md`, `architecture.md`,
-   and `ROADMAP.md` as onboarding material.
+   `ROADMAP.md`, and `BACKEND_NEXT.md` as onboarding material.
 
-Learning exercises in `EXERCISES.md` are complete. Complete Shopping and
-schedule reconciliation are shipped per `ROADMAP.md`.
+Learning exercises in `EXERCISES.md` are complete. Product roadmap items in
+`ROADMAP.md` and the local polish pass are shipped; remote backend work is
+documented in `BACKEND_NEXT.md` only.
