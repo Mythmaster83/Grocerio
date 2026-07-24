@@ -31,10 +31,15 @@ android/app/profile
 android/app/release
 android/local.properties
 android/key.properties
+android/.kotlin/
 ios/Flutter/flutter_export_environment.sh
 ios/Runner/GeneratedPluginRegistrant.*
 *.keystore
 *.jks
+
+# --- Node (Cloudflare Worker) ---
+backend/**/node_modules/
+backend/**/.wrangler/
 
 # --- OS ---
 .DS_Store

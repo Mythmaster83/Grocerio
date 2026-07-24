@@ -30,7 +30,9 @@ npx wrangler secret put PEXELS_API_KEY
 npx wrangler deploy
 ```
 
-Config lives in `wrangler.jsonc` (including Workers Logs under `observability`).
+Config lives in `wrangler.jsonc` (Workers observability / logs included).
+
+**Do not commit** `node_modules/` — run `npm install` locally after clone.
 
 Copy the worker URL (no trailing slash) into the Flutter `.env`:
 

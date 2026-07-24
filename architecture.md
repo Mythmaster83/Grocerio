@@ -92,35 +92,26 @@ the call site, not an assumption.
 
 ## 5. Security posture (read before touching `core/security/` or `core/config/`)
 
-### 5.1 Known, accepted risk: client-embedded Pexels API key
+### 5.1 Image API key: proxy (preferred) vs client-embedded (dev)
 
-`EnvConfig` loads `PEXELS_API_KEY` from a bundled `.env` asset.
-`.gitignore` keeps the real key out of source control, but **it does not
-protect the compiled binary** — anyone can unzip a release APK/IPA and
-read bundled assets, extracting the key. This is a deliberate, documented
-MVP-level tradeoff for a low-privilege, rate-limited, read-only image
-search key. It is explicitly **not** an acceptable pattern to extend to:
+**Preferred (ship):** set `API_BASE_URL` to the Cloudflare Worker in
+`backend/image-proxy/`. The Worker holds `PEXELS_API_KEY` as a Wrangler
+secret. The client may keep `PEXELS_API_KEY=REPLACE_ME`. Image search goes
+through [ProxyImageRemoteDataSource](lib/features/images/data/datasources/proxy_image_remote_datasource.dart).
 
-- authentication tokens
-- payment/billing credentials
-- any key with write access or a cost basis you don't control
-
-**Leverage point:** the moment this app adds anything in that second
-category, the fix is a thin backend proxy (even a single serverless
-function) that holds the real secret and the client calls *that* instead —
-not "encrypt the key harder" or "obfuscate it," both of which are
-theater against a determined attacker with a decompiler. Track this as a
-pre-launch blocker if user accounts, payments, or any privileged API is
-ever added; it is not a blocker for the current MVP scope.
+**Dev fallback:** if `API_BASE_URL` is unset, [EnvConfig](lib/core/config/env_config.dart)
+requires a real client `PEXELS_API_KEY`. That key is bundled as a Flutter
+asset — extractable from an APK/IPA. Acceptable only for local/dev on a
+low-privilege read-only key. Do **not** extend this pattern to auth tokens,
+payments, or any privileged credential.
 
 ### 5.2 Fail-fast configuration
 
-`EnvConfig.load()` throws if `PEXELS_API_KEY` is missing or still the
-placeholder value. `main.dart` currently catches that and boots anyway
-(logged, not fatal) so a missing dev key doesn't block work on unrelated
-features — **flip this to let it propagate before any release build.**
-A silently-half-configured production build is worse than a build that
-refuses to start.
+`EnvConfig.load()`:
+
+- With proxy URL → succeeds without a real client Pexels key.
+- Without proxy → throws if `PEXELS_API_KEY` is missing / `REPLACE_ME`.
+- Release + client key (no proxy) → logs a warning urging proxy cutover.
 
 ### 5.3 Input handling
 
@@ -138,7 +129,7 @@ that accepts free text runs it through this before it touches Isar.
 none of which exist yet in this MVP. It is scaffolded now because adding
 user accounts later should not require inventing a secure-storage strategy
 under deadline pressure. It is not where the Pexels key belongs (that's a
-compile-time app secret, not a per-user runtime one).
+compile-time / server secret, not a per-user runtime one).
 
 ### 5.5 Network layer
 
@@ -146,12 +137,14 @@ compile-time app secret, not a per-user runtime one).
 visibly rather than hang the "Add Item" modal indefinitely) and maps every
 `DioException` to a typed `AppFailure` so raw HTTP/parsing errors never
 reach the UI. Certificate pinning is **not** implemented — flagged as a
-pre-launch item once a stable backend host exists; pinning against
-Pexels' own infrastructure directly is not something you control and not
-worth doing.
+pre-launch item once a stable backend host exists; with the image proxy
+live, pin **that** host later (`BACKEND_NEXT.md`), not `api.pexels.com`.
 
 ## 6. UI layer conventions
 
+- **AppShell** (`preferences/presentation/app_shell.dart`): bottom
+  `NavigationBar` for `HomePage.lists` and `HomePage.settings` only.
+  Order comes from `AppPreferences.pageOrder` (Settings drag-reorder).
 - **Fixed-height, text-scale-aware widgets**: `core/widgets/fixed_height_tile.dart`
   scales its minimum height with the ambient `MediaQuery` text scale factor
   instead of hardcoding pixels — the latter is exactly what breaks (clips
@@ -180,14 +173,17 @@ worth doing.
 | Number of lists | Thousands, trivially | N/A at any realistic personal/small-business scale | — |
 | Concurrent multi-device sync | **Not supported at all** — Isar is local-only | Immediately, if "shared household list" is ever a requirement | This is the single biggest scope wall in the current architecture. Adding sync means introducing a remote source of truth and conflict resolution — not a small add-on. Decide explicitly, don't back into it. |
 | Voice recognition accuracy | Adequate for short, common grocery nouns | Compound/uncommon items, non-English locales | Documented as a known limitation by design (editable transcript, not auto-commit) — see `voice_input_controller.dart` |
+| Flutter web | **Unsupported** — Isar schema IDs are 64-bit ints JS cannot represent exactly | `flutter run -d chrome` | Ship Android/iOS; use Windows only for desktop smoke tests |
 
 ## 8. Explicitly deferred vs shipped
 
 **Still deferred** (see `goals.md` §3 and `BACKEND_NEXT.md`): remote FCM/APNs,
-full offline-first sync, certificate pinning, backend API-key proxy.
+full offline-first sync, certificate pinning.
 
-**Shipped:** Complete Shopping + schedule reconciliation (`ROADMAP.md`);
-local polish (release env fail-fast, photographer attribution, local
-autocomplete, local notifications). Store draft: `STORE_LISTING.md`.
+**Shipped:** Complete Shopping + schedule reconciliation; local polish
+(release env / photographer attribution / autocomplete / local
+notifications); AppShell Lists+Settings; image proxy Worker + client
+cutover path; store draft + ship checklist; `com.grocerio.app` + release
+signing + Grocerio branding/icons.
 
 Do not re-defer shipped items without updating `goals.md` together.

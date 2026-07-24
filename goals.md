@@ -29,40 +29,38 @@ and should say so.
 - [x] Voice input for adding items (editable transcript — see known
       limitation below, this is by design not a bug).
 - [x] Scheduling: one-time / weekly / biweekly / monthly, with a
-      scheduled date shown per list.
+      scheduled date shown per list (Home list order = `scheduledFor`).
 - [x] Preferences: theme mode, accent color, font, text size, home page
-      order (layered like `lists/`; **AppShell** bottom nav follows
-      `pageOrder`; Settings drag-reorder persists).
+      order (**AppShell**: Lists + Settings; Settings drag-reorder).
 - [x] Fixed-height, text-scale-respecting layouts.
 - [x] Add Item / Voice Input buttons and modals.
 - [x] **Complete Shopping** — uncheck all, pop Home, advance recurring or
       delete one-time (`ROADMAP.md` Feature A).
 - [x] Real-time updates: writes stream to UI with no manual refresh.
 - [x] Local storage via Isar.
-- [x] API images (Pexels) with fallback icons — wired end-to-end on add item.
-- [x] API keys kept out of source control via `.gitignore` + `.env`.
+- [x] API images (Pexels via proxy or direct) with fallback icons.
+- [x] Secrets kept out of source control (`.gitignore` + `.env` + Wrangler
+      secret for the proxy).
 
 ## 3. Explicitly out of scope for this MVP (do not build without a
       deliberate scope-change decision — see `BACKEND_NEXT.md`)
 
-- **Remote push (FCM/APNs).** Local reminders are in scope for the polish
-  increment; server-delivered push is not.
-- **Backend proxy for the Pexels API key.** See `architecture.md` §5.1 and
-  `BACKEND_NEXT.md`. Still required before treating the key as non-extractable.
-- **Multi-device / shared-list sync.** Isar is local-only by design — see
+- **Remote push (FCM/APNs).** Local reminders are in scope; server push is not.
+- **Multi-device / shared-list sync.** Isar is local-only — see
   `architecture.md` §7 and `BACKEND_NEXT.md`.
-- **Certificate pinning.** Deferred until there is a stable backend host to
-  pin against (`BACKEND_NEXT.md`).
+- **Certificate pinning.** Defer until pinning the stable proxy host.
 
 ## 3b. Shipped increments
 
-- [x] **Complete Shopping** + **startup schedule reconciliation** (`ROADMAP.md`).
-- [x] **Local polish**: release env fail-fast, photographer attribution,
-      local autocomplete, local notifications. `STORE_LISTING.md`.
-- [x] **AppShell page order**: Lists / Schedule / Settings tabs + Settings
-      drag-reorder. `SHIP_CHECKLIST.md`.
-- [x] **Image proxy worker source**: `backend/image-proxy/` (deploy + set
-      `API_BASE_URL` before store upload — see `BACKEND_NEXT.md`).
+- [x] **Complete Shopping** + **startup schedule reconciliation**.
+- [x] **Local polish**: photographer attribution, local autocomplete,
+      local notifications. `STORE_LISTING.md` / `SHIP_CHECKLIST.md`.
+- [x] **AppShell**: Lists + Settings (Schedule tab removed — duplicate of
+      Home sort order).
+- [x] **Image proxy**: `backend/image-proxy/` deployed; client uses
+      `API_BASE_URL` so release builds need no real client Pexels key.
+- [x] **Ship branding**: `com.grocerio.app`, Grocerio label, custom icons,
+      release keystore wiring, support email in listing draft.
 
 ## 4. Known limitations (status)
 
@@ -74,7 +72,9 @@ and should say so.
 | Complete Shopping real behavior | **Done** |
 | Voice input minor quirks | Contained — transcript editable before commit |
 | Photographer attribution deep link | **Done** |
-| Backend Pexels proxy / sync / cert pinning | Deferred — `BACKEND_NEXT.md` |
+| Image proxy (no client Pexels key) | **Done** when `API_BASE_URL` set |
+| Sync / FCM / cert pinning | Deferred — `BACKEND_NEXT.md` |
+| Flutter web | Unsupported (Isar 64-bit schema IDs) |
 | Checkbox drift | Structurally addressed |
 | Monthly date edge cases beyond Jan | **Hardened** |
 
@@ -89,5 +89,5 @@ This foundation is complete when an agent can:
    `ROADMAP.md`, and `BACKEND_NEXT.md` as onboarding material.
 
 Learning exercises in `EXERCISES.md` are complete. Product roadmap items in
-`ROADMAP.md` and the local polish pass are shipped; remote backend work is
+`ROADMAP.md` and the local polish pass are shipped; remaining remote work is
 documented in `BACKEND_NEXT.md` only.
