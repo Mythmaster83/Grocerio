@@ -12,9 +12,9 @@ Run before uploading a release build to a store.
 
 ## Branding
 
-- [ ] App label shows **Grocer** on device home screen
-- [ ] Launcher icon is final (not default Flutter icon)
-- [ ] `STORE_LISTING.md` support email filled in
+- [x] App label shows **Grocerio** on device home screen
+- [x] Launcher icon is final (not default Flutter icon)
+- [x] `STORE_LISTING.md` support email filled in
 
 ## Builds
 
@@ -33,8 +33,7 @@ flutter build apk         # sideload / testing
 - [ ] Complete Shopping: recurring advances date; one-time deletes; returns Home
 - [ ] Overdue list: miss icon + dialog; reconcile rolls recurring date
 - [ ] Notification permission accepted; shopping-day / miss notices behave
-- [ ] Settings: theme / accent / text scale; **drag Home page order** updates tabs
-- [ ] Schedule tab lists by date; opens detail
+- [ ] Settings: theme / accent / text scale; drag Home page order updates tabs
 
 ## Known non-blockers
 

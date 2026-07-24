@@ -20,7 +20,7 @@ class GrocerApp extends ConsumerWidget {
     final textScale = prefs?.textScale ?? 1.0;
 
     return MaterialApp(
-      title: 'Grocer',
+      title: 'Grocerio',
       debugShowCheckedModeBanner: false,
       themeMode: ThemeMode.values[prefs?.themeModeIndex ?? 0],
       theme: AppTheme.build(

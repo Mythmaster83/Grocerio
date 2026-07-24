@@ -51,6 +51,22 @@ dev_dependencies:
   build_runner: ^2.4.11
   flutter_lints: ^4.0.0
   mocktail: ^1.0.3
+  flutter_launcher_icons: ^0.14.3
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  windows:
+    generate: true
+    image_path: assets/branding/app_icon_source.png
+    icon_size: 256
+  image_path: assets/branding/app_icon_source.png
+  adaptive_icon_background: "#F3EFE6"
+  adaptive_icon_foreground: assets/branding/app_icon_source.png
+  # iOS rejects transparency — circular sage disc on cream so it reads as a circle.
+  image_path_ios: assets/branding/app_icon_ios.png
+  remove_alpha_ios: true
+  background_color_ios: "#F3EFE6"
 
 flutter:
   uses-material-design: true
