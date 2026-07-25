@@ -5,7 +5,7 @@ import '../models/grocery_item_model.dart';
 import '../models/grocery_list_model.dart';
 
 /// Owns every raw Isar query. Nothing above this layer knows Isar exists.
-/// Throws [StorageException] on failure — the repository above is
+/// Throws [StorageException] on failure â€” the repository above is
 /// responsible for catching it and converting to Result<T>/AppFailure.
 class ListsLocalDataSource {
   final Isar _isar;
@@ -237,7 +237,7 @@ class ListsLocalDataSource {
     }
   }
 
-  /// Uncheck every item, advance [scheduledFor], clear miss flag — one txn.
+  /// Uncheck every item, advance [scheduledFor], clear miss flag â€” one txn.
   Future<void> finalizeShoppingTrip({
     required String listPublicId,
     required DateTime newScheduledFor,

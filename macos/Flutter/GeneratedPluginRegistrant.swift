@@ -9,7 +9,7 @@ import connectivity_plus
 import flutter_local_notifications
 import flutter_secure_storage_macos
 import flutter_timezone
-import isar_flutter_libs
+import isar_community_flutter_libs
 import speech_to_text
 import sqflite_darwin
 import url_launcher_macos

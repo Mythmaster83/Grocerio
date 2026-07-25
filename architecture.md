@@ -73,6 +73,10 @@ the call site, not an assumption.
 
 ## 4. Storage: Isar, single instance, embedded items
 
+- Dart API: `package:isar` 3.x. Native Android libs come from
+  **`isar_community_flutter_libs`** so `libisar.so` is **16 KB page-size
+  aligned** (required for modern Android / Play). Do not switch back to
+  `isar_flutter_libs` without checking 16 KB support.
 - One `Isar` instance for the whole app, opened once in `main()` and
   injected via `isarProvider.overrideWithValue(isar)` — every datasource
   reads it through DI, never opens its own handle. This is what makes the

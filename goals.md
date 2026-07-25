@@ -37,7 +37,7 @@ and should say so.
 - [x] **Complete Shopping** — uncheck all, pop Home, advance recurring or
       delete one-time (`ROADMAP.md` Feature A).
 - [x] Real-time updates: writes stream to UI with no manual refresh.
-- [x] Local storage via Isar.
+- [x] Local storage via Isar (community native libs for 16 KB page size).
 - [x] API images (Pexels via proxy or direct) with fallback icons.
 - [x] Secrets kept out of source control (`.gitignore` + `.env` + Wrangler
       secret for the proxy).

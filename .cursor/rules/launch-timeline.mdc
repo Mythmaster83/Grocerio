@@ -1,0 +1,37 @@
+---
+description: Grocerio Play launch timeline — short compliance check every turn
+alwaysApply: true
+---
+
+# Launch timeline compliance
+
+Canonical schedule: [`LAUNCH_TIMELINE.md`](../../LAUNCH_TIMELINE.md).
+Earliest production target: **~Aug 22, 2026**.
+
+## After every user prompt
+
+Before or at the end of the response, run a **tiny compliance check** (2–4 lines max unless the user asked about launch):
+
+1. **Today’s window** — which row of the timeline applies (use user_info date).
+2. **On track / at risk** — one line; flag if work contradicts the window (e.g. building features instead of device QA during Jul 25–28).
+3. **Critical path** — from Jul 28 onward, remind that **recruiting 12 testers** runs in parallel with listing/build; don’t serialize it.
+4. **Out of scope for this launch** — don’t suggest sync/FCM/accounts/cert pinning as launch blockers unless the user expands scope.
+
+Skip the check only if the user message is purely meta (e.g. “ignore timeline”) or a one-word ack with no work.
+
+## Window cheat sheet
+
+| Dates | Focus |
+|---|---|
+| Jul 25–28 | Device QA, bug pass, verify v1 issues fixed (checkbox, voice, image) |
+| Jul 28–30 | Signed AAB, Play listing, privacy policy |
+| Jul 30–31 | Internal testing — self sanity-check |
+| Jul 28+ parallel | Recruit 12 closed testers |
+| ~Aug 1 | Closed testing → 14-day clock |
+| ~Aug 15 | Apply for production access |
+| ~Aug 15–22 | Google review |
+| ~Aug 22 | Earliest production |
+
+## When user asks “what next?”
+
+Answer from the **current window** in `LAUNCH_TIMELINE.md`, not a generic backlog.

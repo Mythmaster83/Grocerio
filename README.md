@@ -7,6 +7,7 @@ Display name: **Grocerio** · Android / iOS id: `com.grocerio.app`
 
 | Doc | Purpose |
 |---|---|
+| `LAUNCH_TIMELINE.md` | Play closed-test → production dates (~Aug 22) |
 | `architecture.md` | Layering, Riverpod, Isar, security contract |
 | `goals.md` | MVP scope and definition of done |
 | `skills.md` | Coding conventions |

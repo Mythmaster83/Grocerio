@@ -9,7 +9,7 @@ import '../utils/app_logger.dart';
 
 /// Single Isar instance for the whole app, opened once in main() before
 /// runApp and overridden into the provider tree. Every datasource depends
-/// on THIS provider — never opens Isar itself — so tests can override it
+/// on THIS provider â€” never opens Isar itself â€” so tests can override it
 /// with an in-memory instance.
 final isarProvider = Provider<Isar>((ref) {
   throw UnimplementedError(
@@ -33,7 +33,7 @@ Future<Isar> openAppIsar() async {
       inspector: false,
     );
   } catch (e, st) {
-    // Schema mismatch or corrupted file — wipe and reopen once (alpha-safe).
+    // Schema mismatch or corrupted file â€” wipe and reopen once (alpha-safe).
     logger.error('Isar open failed; recreating database', e, st);
     await _deleteIsarFiles(dir.path, _isarDbName);
     return Isar.open(

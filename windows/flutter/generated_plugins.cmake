@@ -6,7 +6,7 @@ list(APPEND FLUTTER_PLUGIN_LIST
   connectivity_plus
   flutter_secure_storage_windows
   flutter_timezone
-  isar_flutter_libs
+  isar_community_flutter_libs
   speech_to_text_windows
   url_launcher_windows
 )

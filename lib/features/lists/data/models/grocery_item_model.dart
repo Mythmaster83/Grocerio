@@ -3,7 +3,7 @@ import '../../domain/entities/grocery_item.dart';
 
 part 'grocery_item_model.g.dart';
 
-/// Embedded Isar object (no @collection — it lives inside GroceryListModel.items).
+/// Embedded Isar object (no @collection â€” it lives inside GroceryListModel.items).
 /// Embedding, not a separate collection + IsarLink, is the right call here:
 /// items have no independent lifecycle outside their list, and embedding
 /// keeps "add item -> stream updates to UI" a single-document write, which
