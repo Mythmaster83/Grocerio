@@ -4,7 +4,6 @@
 
 list(APPEND FLUTTER_PLUGIN_LIST
   connectivity_plus
-  flutter_secure_storage_windows
   flutter_timezone
   isar_community_flutter_libs
   speech_to_text_windows

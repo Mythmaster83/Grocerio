@@ -10,7 +10,7 @@ class InputSanitizer {
 
   static const int maxItemNameLength = 120;
   static const int maxListNameLength = 80;
-  static const int maxQuantityDigits = 6; // caps at 999999
+  static const double maxQuantityValue = 999999.0;
 
   static String sanitizeFreeText(String input, {required int maxLength}) {
     final stripped = input
@@ -27,8 +27,7 @@ class InputSanitizer {
     final value = double.tryParse(cleaned);
     if (value == null || value.isNaN || value.isInfinite) return null;
     if (value < 0) return null;
-    const maxValue = 999999.0;
-    return value > maxValue ? maxValue : value;
+    return value > maxQuantityValue ? maxQuantityValue : value;
   }
 
   /// Safe for use as a URL query parameter (Pexels image search term).

@@ -128,12 +128,10 @@ that accepts free text runs it through this before it touches Isar.
 
 ### 5.4 Secure storage vs. env config — don't conflate them
 
-`SecureStorageService` (Keychain/EncryptedSharedPreferences) is for
-**runtime secrets created during app use** — auth tokens, refresh tokens —
-none of which exist yet in this MVP. It is scaffolded now because adding
-user accounts later should not require inventing a secure-storage strategy
-under deadline pressure. It is not where the Pexels key belongs (that's a
-compile-time / server secret, not a per-user runtime one).
+There is **no** secure-storage wrapper in this MVP (no auth tokens yet).
+When accounts land, add Keychain / EncryptedSharedPreferences for
+**runtime** per-user secrets — not for the Pexels key (that's a
+compile-time / Worker secret via `EnvConfig` / Wrangler).
 
 ### 5.5 Network layer
 
