@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/di/isar_provider.dart';
+import '../../../catalog/presentation/providers/catalog_di.dart';
 import '../../../notifications/presentation/providers/notifications_di.dart';
 import '../../data/datasources/lists_local_datasource.dart';
 import '../../data/repositories/lists_repository_impl.dart';
@@ -17,7 +18,10 @@ final listsLocalDataSourceProvider = Provider<ListsLocalDataSource>((ref) {
 });
 
 final listsRepositoryProvider = Provider<ListsRepository>((ref) {
-  return ListsRepositoryImpl(ref.watch(listsLocalDataSourceProvider));
+  return ListsRepositoryImpl(
+    ref.watch(listsLocalDataSourceProvider),
+    ref.watch(catalogRepositoryProvider),
+  );
 });
 
 final createScheduledListProvider = Provider<CreateScheduledList>((ref) {

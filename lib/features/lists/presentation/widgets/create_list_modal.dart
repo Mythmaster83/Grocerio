@@ -7,10 +7,8 @@ Future<void> showCreateListModal(BuildContext context) {
   return showModalBottomSheet(
     context: context,
     isScrollControlled: true,
-    builder: (_) => Padding(
-      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
-      child: const _CreateListForm(),
-    ),
+    useSafeArea: true,
+    builder: (_) => const _CreateListForm(),
   );
 }
 
@@ -63,50 +61,64 @@ class _CreateListFormState extends ConsumerState<_CreateListForm> {
   @override
   Widget build(BuildContext context) {
     final actionState = ref.watch(listActionsControllerProvider);
-    return Padding(
-      padding: const EdgeInsets.all(20),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Text('New list', style: Theme.of(context).textTheme.titleLarge),
-          const SizedBox(height: 16),
-          TextField(
-            controller: _nameController,
-            decoration: const InputDecoration(hintText: 'e.g. Weekly groceries'),
-            autofocus: true,
-          ),
-          const SizedBox(height: 12),
-          DropdownButtonFormField<ScheduleFrequency>(
-            initialValue: _frequency,
-            decoration: const InputDecoration(labelText: 'Repeats'),
-            items: ScheduleFrequency.values
-                .map((f) => DropdownMenuItem(value: f, child: Text(f.label)))
-                .toList(),
-            onChanged: (f) => setState(() => _frequency = f ?? _frequency),
-          ),
-          const SizedBox(height: 12),
-          ListTile(
-            contentPadding: EdgeInsets.zero,
-            title: const Text('Scheduled for'),
-            subtitle: Text('${_date.year}-${_date.month.toString().padLeft(2, '0')}-${_date.day.toString().padLeft(2, '0')}'),
-            trailing: const Icon(Icons.calendar_today_outlined),
-            onTap: _pickDate,
-          ),
-          if (_error != null) ...[
+    // Use the sheet's MediaQuery — not the caller's — so padding tracks the
+    // keyboard open/close cycle and does not leave a stuck bottom gap.
+    final keyboardInset = MediaQuery.viewInsetsOf(context).bottom;
+
+    return AnimatedPadding(
+      duration: const Duration(milliseconds: 100),
+      curve: Curves.easeOut,
+      padding: EdgeInsets.only(bottom: keyboardInset),
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text('New list', style: Theme.of(context).textTheme.titleLarge),
+            const SizedBox(height: 16),
+            TextField(
+              controller: _nameController,
+              decoration:
+                  const InputDecoration(hintText: 'e.g. Weekly groceries'),
+              autofocus: true,
+            ),
+            const SizedBox(height: 12),
+            DropdownButtonFormField<ScheduleFrequency>(
+              initialValue: _frequency,
+              decoration: const InputDecoration(labelText: 'Repeats'),
+              items: ScheduleFrequency.values
+                  .map((f) => DropdownMenuItem(value: f, child: Text(f.label)))
+                  .toList(),
+              onChanged: (f) => setState(() => _frequency = f ?? _frequency),
+            ),
+            const SizedBox(height: 12),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              title: const Text('Scheduled for'),
+              subtitle: Text(
+                  '${_date.year}-${_date.month.toString().padLeft(2, '0')}-${_date.day.toString().padLeft(2, '0')}'),
+              trailing: const Icon(Icons.calendar_today_outlined),
+              onTap: _pickDate,
+            ),
+            if (_error != null) ...[
+              const SizedBox(height: 8),
+              Text(_error!,
+                  style: TextStyle(color: Theme.of(context).colorScheme.error)),
+            ],
+            const SizedBox(height: 12),
+            FilledButton(
+              onPressed: actionState.isLoading ? null : _submit,
+              child: actionState.isLoading
+                  ? const SizedBox(
+                      height: 20,
+                      width: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2))
+                  : const Text('Create List'),
+            ),
             const SizedBox(height: 8),
-            Text(_error!, style: TextStyle(color: Theme.of(context).colorScheme.error)),
           ],
-          const SizedBox(height: 12),
-          FilledButton(
-            onPressed: actionState.isLoading ? null : _submit,
-            child: actionState.isLoading
-                ? const SizedBox(
-                    height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2))
-                : const Text('Create List'),
-          ),
-          const SizedBox(height: 8),
-        ],
+        ),
       ),
     );
   }

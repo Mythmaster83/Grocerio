@@ -15,8 +15,8 @@ if (keystorePropertiesFile.exists()) {
 
 android {
     namespace = "com.example.grocerio_alpha"
-    // Floor at 36 so AndroidX / notifications metadata checks pass.
-    compileSdk = maxOf(flutter.compileSdkVersion, 36)
+    // Floor at 37: permission_handler_android AARs require compileSdk >= 37.
+    compileSdk = maxOf(flutter.compileSdkVersion, 37)
     ndkVersion = flutter.ndkVersion
 
     compileOptions {

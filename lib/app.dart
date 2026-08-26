@@ -1,15 +1,52 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'core/theme/app_theme.dart';
-import 'features/preferences/presentation/app_shell.dart';
+import 'features/lists/presentation/screens/home_screen.dart';
 import 'features/preferences/presentation/providers/preferences_controller.dart';
+import 'features/stores/presentation/providers/stores_di.dart';
+import 'features/sync/presentation/providers/sync_di.dart';
 
-class GrocerApp extends ConsumerWidget {
+class GrocerApp extends ConsumerStatefulWidget {
   const GrocerApp({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<GrocerApp> createState() => _GrocerAppState();
+}
+
+class _GrocerAppState extends ConsumerState<GrocerApp>
+    with WidgetsBindingObserver {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    final sync = ref.read(syncStatusProvider.notifier);
+    switch (state) {
+      case AppLifecycleState.resumed:
+        sync.startHeartbeat();
+        sync.syncNow();
+      case AppLifecycleState.inactive:
+      case AppLifecycleState.paused:
+      case AppLifecycleState.hidden:
+      case AppLifecycleState.detached:
+        sync.stopHeartbeat();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final prefsAsync = ref.watch(preferencesControllerProvider);
+    // Prefetch the store directory so Your stores is not empty on first open.
+    ref.watch(storesStreamProvider);
 
     // Preferences load once at startup from a local Isar write, typically
     // sub-frame — a brief MaterialApp with default theme avoids a jarring
@@ -18,21 +55,15 @@ class GrocerApp extends ConsumerWidget {
     final prefs = prefsAsync.valueOrNull;
 
     final textScale = prefs?.textScale ?? 1.0;
+    // One dark theme, regardless of the platform setting — see AppTheme.
+    final theme = AppTheme.build(fontFamily: prefs?.fontFamily ?? 'Inter');
 
     return MaterialApp(
       title: 'Grocerio',
       debugShowCheckedModeBanner: false,
-      themeMode: ThemeMode.values[prefs?.themeModeIndex ?? 0],
-      theme: AppTheme.build(
-        brightness: Brightness.light,
-        accent: Color(prefs?.accentColorValue ?? 0xFF2F6F4F),
-        fontFamily: prefs?.fontFamily ?? 'Inter',
-      ),
-      darkTheme: AppTheme.build(
-        brightness: Brightness.dark,
-        accent: Color(prefs?.accentColorValue ?? 0xFF2F6F4F),
-        fontFamily: prefs?.fontFamily ?? 'Inter',
-      ),
+      themeMode: ThemeMode.dark,
+      theme: theme,
+      darkTheme: theme,
       // User text-size preference is applied here — the one place Flutter
       // expects accessibility scaling to live — instead of baking a scale
       // factor into individual TextStyles (which crashes when fontSize is
@@ -45,7 +76,9 @@ class GrocerApp extends ConsumerWidget {
           child: child!,
         );
       },
-      home: const AppShell(),
+      // Single-page app: lists are the whole UI, settings is pushed from the
+      // AppBar. No bottom navigation to keep one destination unambiguous.
+      home: const HomeScreen(),
     );
   }
 }

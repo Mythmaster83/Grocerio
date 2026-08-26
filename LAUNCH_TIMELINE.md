@@ -6,7 +6,7 @@ Source of truth for the personal/closed-test → production path.
 | Dates | What happens |
 |---|---|
 | **Jul 25–28** | Device QA, final bug pass, confirm v2 architecture resolved v1 known issues (checkbox drift, voice input, image redirect) |
-| **Jul 28–30** | Signed app bundle, Play Console listing (screenshots, description, **privacy policy** — expect this even with no accounts: Pexels network calls + local storage) |
+| **Jul 28–30** | Signed app bundle, Play Console listing (screenshots in **dark mode**, description, **privacy policy** covering accounts / email / lists / sharing / shopper-submitted prices, **account deletion URL**) |
 | **Jul 30–31** | Internal testing track live (instant, no review wait) — sanity-check with yourself first |
 | **Jul 28 onward (parallel)** | Recruit **12 testers now** — do not wait for the build; this is the critical path |
 | **~Aug 1** | Closed testing track live, 12 testers opted in → **14-day clock** starts at the earliest |
@@ -29,22 +29,28 @@ Closed testing cannot start the 14-day clock until **both** the build is on the 
 |---|---|---|
 | Checkbox drift | Single write path: tile → controller → Isar → stream | Toggle checked, leave screen, return — state sticks; no local mirror |
 | Voice input | Editable transcript before commit | Speak → edit text → add; cancel without adding |
-| Image redirect / broken images | Proxy + `NetworkImageWithFallback` | Add item with image; open photographer link; airplane mode shows fallback |
-| 16 KB page size (Play / Android 15+) | `isar_community_flutter_libs` for aligned `libisar.so` | Dialog gone after clean reinstall of new build |
+| Image redirect / broken images | Removed entirely — bundled offline icons chosen from the item name | Add "milk", "bread", "toilet paper" in airplane mode; each shows a matching colorful icon |
+| 16 KB page size (Play / Android 15+) | Full `isar_community` 3.3.2 stack (Dart + libs + generator) | Dialog gone after clean reinstall of new build |
 
 ## Privacy policy note
 
-Play often requires a privacy policy URL when the app uses network and/or sensitive permissions (mic, notifications) even without accounts. Host a short page (GitHub Pages, Notion public page, or simple site) covering: local list data, mic for voice, notifications, image search via proxy/Pexels, no account, contact email.
+Host [`PRIVACY.md`](PRIVACY.md) publicly. Play requires a policy URL for mic,
+notifications, **and** accounts. The same page's `#account-deletion` heading
+is the public account-deletion URL Google requires next to in-app deletion.
+Data Safety must declare that submitted prices are shared with other users.
 
 ## Status log (update as you go)
 
 - [x] Keystore backed up
-- [x] Tests green / release `.env` / proxy deployed
 - [ ] Device QA + v1-issue verification (Jul 25–28)
-- [ ] Privacy policy URL live
+- [ ] Privacy policy URL live (`PRIVACY.md` hosted)
+- [ ] Account deletion URL live
+- [ ] Play Data Safety answers updated
+- [ ] Dark-mode screenshots
+- [ ] Closed-track AAB refresh (sharing + prices build)
 - [ ] AAB + Play listing (Jul 28–30)
 - [ ] Internal testing self-check (Jul 30–31)
 - [ ] 12 testers recruited (start Jul 28)
 - [ ] Closed testing + 14-day clock (~Aug 1)
-- [ ] Production access application (~Aug 15)
+- [ ] Production access application (~Aug 15) — **do not withdraw if mid-review**
 - [ ] Production launch (~Aug 22)

@@ -2,6 +2,10 @@
 .env
 key.env
 *.env.local
+supabase.defines.json
+
+# --- Tool caches ---
+tool/.osm_stores_checkpoint.json
 
 # --- Flutter / Dart ---
 .dart_tool/

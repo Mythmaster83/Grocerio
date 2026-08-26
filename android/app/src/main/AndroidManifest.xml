@@ -12,10 +12,14 @@
       flutter_local_notifications (resolved at build time via Gradle).
     -->
 
-    <!-- Required in ALL build types. The debug manifest also declares this,
-         which is why network works in `flutter run` but silently dies in a
-         release build if it's missing here. -->
+    <!-- INTERNET is required for account sign-in, list sharing, and price sync
+         (Supabase). Lists still live in local Isar and the app works offline;
+         the network is only used when a build ships backend credentials and the
+         user signs in. Voice input goes through the platform
+         RecognitionService, which networks in its own process. -->
     <uses-permission android:name="android.permission.INTERNET"/>
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
     <uses-permission android:name="android.permission.RECORD_AUDIO"/>
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
@@ -64,6 +68,15 @@
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
+            </intent-filter>
+            <!-- Brings email sign-in links back into the app. The scheme must
+                 match SupabaseConfig.authRedirectUrl and the redirect URL
+                 registered in the Supabase dashboard. -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <category android:name="android.intent.category.BROWSABLE"/>
+                <data android:scheme="io.grocerio" android:host="login-callback"/>
             </intent-filter>
         </activity>
         <!-- Don't delete the meta-data below.

@@ -1,22 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/result.dart';
-import '../../domain/entities/app_preferences.dart';
+import '../../../stores/presentation/providers/stores_di.dart';
+import '../../../stores/presentation/screens/tracked_stores_screen.dart';
 import '../providers/preferences_controller.dart';
 
+/// Pushed from the drawer — the app has a single page, so settings is a route,
+/// not a tab.
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
-
-  static String _pageLabel(HomePage page) => switch (page) {
-        HomePage.lists => 'Lists',
-        HomePage.settings => 'Settings',
-      };
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final prefsAsync = ref.watch(preferencesControllerProvider);
     final controller = ref.read(preferencesControllerProvider.notifier);
+    final trackedCount = ref.watch(trackedStoresProvider).length;
 
     ref.listen(preferencesControllerProvider, (prev, next) {
       if (next.hasError) {
@@ -30,46 +28,11 @@ class SettingsScreen extends ConsumerWidget {
     });
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Preferences')),
+      appBar: AppBar(title: const Text('Settings')),
       body: prefsAsync.when(
         data: (prefs) => ListView(
           padding: const EdgeInsets.all(16),
           children: [
-            Text('Theme', style: Theme.of(context).textTheme.titleMedium),
-            const SizedBox(height: 8),
-            SegmentedButton<ThemeMode>(
-              segments: const [
-                ButtonSegment(value: ThemeMode.system, label: Text('System')),
-                ButtonSegment(value: ThemeMode.light, label: Text('Light')),
-                ButtonSegment(value: ThemeMode.dark, label: Text('Dark')),
-              ],
-              selected: {ThemeMode.values[prefs.themeModeIndex]},
-              onSelectionChanged: (s) => controller
-                  .updatePrefs((p) => p.copyWith(themeModeIndex: s.first.index)),
-            ),
-            const SizedBox(height: 24),
-            Text('Accent color', style: Theme.of(context).textTheme.titleMedium),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 12,
-              children: AppTheme.accentPalette.map((color) {
-                final selected =
-                    Color(prefs.accentColorValue).toARGB32() == color.toARGB32();
-                return GestureDetector(
-                  onTap: () => controller.updatePrefs(
-                    (p) => p.copyWith(accentColorValue: color.toARGB32()),
-                  ),
-                  child: CircleAvatar(
-                    backgroundColor: color,
-                    radius: 20,
-                    child: selected
-                        ? const Icon(Icons.check, color: Colors.white)
-                        : null,
-                  ),
-                );
-              }).toList(),
-            ),
-            const SizedBox(height: 24),
             Text('Text size', style: Theme.of(context).textTheme.titleMedium),
             Slider(
               value: prefs.textScale,
@@ -95,38 +58,24 @@ class SettingsScreen extends ConsumerWidget {
               },
             ),
             const SizedBox(height: 24),
-            Text('Home page order',
-                style: Theme.of(context).textTheme.titleMedium),
-            const SizedBox(height: 4),
-            Text(
-              'Drag to change the order of tabs at the bottom of the app.',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
-            ),
+            Text('Shopping', style: Theme.of(context).textTheme.titleMedium),
             const SizedBox(height: 8),
-            ReorderableListView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              buildDefaultDragHandles: false,
-              itemCount: prefs.pageOrder.length,
-              onReorderItem: (oldIndex, newIndex) {
-                final order = List<HomePage>.from(prefs.pageOrder);
-                final item = order.removeAt(oldIndex);
-                order.insert(newIndex, item);
-                controller.setPageOrder(order);
-              },
-              itemBuilder: (context, index) {
-                final page = prefs.pageOrder[index];
-                return ListTile(
-                  key: ValueKey(page),
-                  title: Text(_pageLabel(page)),
-                  leading: ReorderableDragStartListener(
-                    index: index,
-                    child: const Icon(Icons.drag_handle),
+            Card(
+              child: ListTile(
+                leading: const Icon(Icons.storefront_outlined),
+                title: const Text('Your stores'),
+                subtitle: Text(
+                  trackedCount == 0
+                      ? 'Pick nearby locations to compare prices'
+                      : '$trackedCount tracked · community prices follow these',
+                ),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => const TrackedStoresScreen(),
                   ),
-                );
-              },
+                ),
+              ),
             ),
           ],
         ),

@@ -37,31 +37,12 @@ class PreferencesRepositoryImpl implements PreferencesRepository{
     accentColorValue: m.accentColorValue,
     fontFamily: m.fontFamily,
     textScale: m.textScale,
-    pageOrder: _pageOrderFromStoredIndices(m.pageOrderIndices),
+    customUnits: List<String>.unmodifiable(m.customUnits),
+    catalogSeedVersion: m.catalogSeedVersion,
+    lastReportedStoreSlug: m.lastReportedStoreSlug,
+    deviceId: m.deviceId,
+    priceZip: m.priceZip,
   );
-
-  /// Maps stored indices → [HomePage], dropping the removed Schedule tab.
-  ///
-  /// Legacy enum was `lists=0, schedule=1, settings=2`. Current is
-  /// `lists=0, settings=1`. If a `2` is present we treat `1` as the old
-  /// schedule slot and ignore it; otherwise `1` means settings.
-  static List<HomePage> _pageOrderFromStoredIndices(List<int> indices) {
-    final hasLegacySettings = indices.contains(2);
-    final order = <HomePage>[];
-    for (final i in indices) {
-      if (i == 0) {
-        order.add(HomePage.lists);
-      } else if (i == 2) {
-        order.add(HomePage.settings);
-      } else if (i == 1 && !hasLegacySettings) {
-        order.add(HomePage.settings);
-      }
-    }
-    for (final page in HomePage.values) {
-      if (!order.contains(page)) order.add(page);
-    }
-    return order;
-  }
 
   PreferencesModel _fromDomain(AppPreferences p) => PreferencesModel()
     ..isarId = 0
@@ -69,5 +50,9 @@ class PreferencesRepositoryImpl implements PreferencesRepository{
     ..accentColorValue = p.accentColorValue
     ..fontFamily = p.fontFamily
     ..textScale = p.textScale
-    ..pageOrderIndices = p.pageOrder.map((page) => page.index).toList();
+    ..customUnits = List<String>.from(p.customUnits)
+    ..catalogSeedVersion = p.catalogSeedVersion
+    ..lastReportedStoreSlug = p.lastReportedStoreSlug
+    ..deviceId = p.deviceId
+    ..priceZip = p.priceZip;
 }

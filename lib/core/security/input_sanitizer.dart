@@ -1,15 +1,17 @@
 /// Centralized input validation/sanitization for anything a user types that
-/// crosses a trust boundary (gets persisted, sent over the network, or used
-/// to build a query/URL). Isar being NoSQL/typed removes classic SQL
-/// injection risk, but we still guard against:
+/// gets persisted. Isar being NoSQL/typed removes classic SQL injection risk,
+/// but we still guard against:
 /// - unbounded string length (storage bloat / UI overflow / DoS-by-paste)
 /// - control characters breaking layout or Isar full-text indices
-/// - values used directly as URL query params (Pexels search)
 class InputSanitizer {
   InputSanitizer._();
 
   static const int maxItemNameLength = 120;
   static const int maxListNameLength = 80;
+
+  /// Custom units are shown inline next to a quantity, so they must stay short
+  /// enough not to push the item name off the row.
+  static const int maxUnitLabelLength = 16;
   static const double maxQuantityValue = 999999.0;
 
   static String sanitizeFreeText(String input, {required int maxLength}) {
@@ -28,11 +30,5 @@ class InputSanitizer {
     if (value == null || value.isNaN || value.isInfinite) return null;
     if (value < 0) return null;
     return value > maxQuantityValue ? maxQuantityValue : value;
-  }
-
-  /// Safe for use as a URL query parameter (Pexels image search term).
-  static String sanitizeSearchTerm(String input) {
-    final cleaned = sanitizeFreeText(input, maxLength: 60);
-    return Uri.encodeQueryComponent(cleaned);
   }
 }

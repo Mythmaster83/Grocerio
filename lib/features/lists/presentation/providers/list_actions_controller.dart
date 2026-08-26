@@ -1,8 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/utils/result.dart';
-import '../../../images/presentation/providers/images_di.dart';
 import '../../../notifications/presentation/providers/notifications_di.dart';
 import '../../../scheduling/domain/entities/schedule_frequency.dart';
+import '../../../sync/presentation/providers/sync_di.dart';
 import '../../domain/entities/grocery_item.dart';
 import '../../domain/entities/grocery_list.dart';
 import 'lists_di.dart';
@@ -40,38 +40,56 @@ class ListActionsController extends AsyncNotifier<void> {
     );
   }
 
+  /// Rename / reschedule / re-time a list from the home screen's 3-dot menu.
+  ///
+  /// A date or frequency change re-arms the reminder, so the notification
+  /// always matches what is actually stored — no drift between DB and pending
+  /// alarms.
+  Future<bool> updateList({
+    required String listId,
+    String? name,
+    DateTime? scheduledFor,
+    ScheduleFrequency? frequency,
+  }) async {
+    state = const AsyncLoading();
+    final repo = ref.read(listsRepositoryProvider);
+    final result = await repo.updateList(
+      listId: listId,
+      name: name,
+      scheduledFor: scheduledFor,
+      frequencyIndex: frequency?.index,
+    );
+    if (!_settle(result)) return false;
+
+    final after = await repo.getList(listId);
+    await after.when(
+      ok: (list) async {
+        if (list != null) {
+          await ref.read(listNotificationSchedulerProvider).scheduleForList(list);
+        }
+      },
+      err: (_) async {},
+    );
+    return true;
+  }
+
+  /// Items no longer trigger a network image lookup — the icon is derived
+  /// from the name when the row renders (see features/item_icons).
   Future<bool> addItem({
     required String listId,
     required String name,
     required double quantity,
     required ItemUnit unit,
+    String? customUnit,
   }) async {
     state = const AsyncLoading();
     final repo = ref.read(listsRepositoryProvider);
-    final res = await ref.read(imageRepositoryProvider).search(name);
-
-    String? imageUrl;
-    String? imagePhotographer;
-    String? imagePhotographerUrl;
-    res.when(
-      ok: (images) {
-        if (images.isEmpty) return;
-        final chosen = images.last;
-        imageUrl = chosen.thumbnailUrl;
-        imagePhotographer = chosen.photographer;
-        imagePhotographerUrl = chosen.photographerUrl;
-      },
-      err: (_) {},
-    );
-
     final result = await repo.addItem(
       listId: listId,
       name: name,
       quantity: quantity,
       unitIndex: unit.index,
-      imageUrl: imageUrl,
-      imagePhotographer: imagePhotographer,
-      imagePhotographerUrl: imagePhotographerUrl,
+      customUnit: customUnit,
     );
     return _settle(result);
   }
@@ -85,7 +103,9 @@ class ListActionsController extends AsyncNotifier<void> {
     String? name,
     double? quantity,
     ItemUnit? unit,
+    String? customUnit,
     bool? isChecked,
+    int? canonicalItemId,
   }) async {
     state = const AsyncLoading();
     final repo = ref.read(listsRepositoryProvider);
@@ -95,7 +115,9 @@ class ListActionsController extends AsyncNotifier<void> {
       name: name,
       quantity: quantity,
       unitIndex: unit?.index,
+      customUnit: customUnit,
       isChecked: isChecked,
+      canonicalItemId: canonicalItemId,
     );
     return _settle(result);
   }
@@ -114,6 +136,9 @@ class ListActionsController extends AsyncNotifier<void> {
     final ok = _settle(result);
     if (ok) {
       await ref.read(listNotificationSchedulerProvider).cancelForList(listId);
+      // Tombstone must leave this device immediately; the 3s write debounce
+      // is what left the list alive on the other phone.
+      ref.read(syncStatusProvider.notifier).requestSync(immediate: true);
     }
     return ok;
   }
@@ -133,6 +158,7 @@ class ListActionsController extends AsyncNotifier<void> {
     final scheduler = ref.read(listNotificationSchedulerProvider);
     if (prior!.frequency == ScheduleFrequency.oneTime) {
       await scheduler.cancelForList(listId);
+      ref.read(syncStatusProvider.notifier).requestSync(immediate: true);
     } else {
       final after = await repo.getList(listId);
       await after.when(

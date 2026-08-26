@@ -22,16 +22,25 @@ abstract class ListsRepository {
     required int frequencyIndex,
   });
 
+  /// Rename, reschedule and/or change how often a list repeats. Every field is
+  /// optional so the caller can change just one without reading the list first.
+  Future<Result<void>> updateList({
+    required String listId,
+    String? name,
+    DateTime? scheduledFor,
+    int? frequencyIndex,
+  });
+
   Future<Result<void>> deleteList(String listId);
 
+  /// [customUnit] is required when [unitIndex] points at `ItemUnit.custom`
+  /// and ignored otherwise.
   Future<Result<GroceryItem>> addItem({
     required String listId,
     required String name,
     required double quantity,
     required int unitIndex,
-    String? imageUrl,
-    String? imagePhotographer,
-    String? imagePhotographerUrl,
+    String? customUnit,
   });
 
   /// Distinct item names matching [query] (case-insensitive prefix), newest-first feel via sort.
@@ -43,7 +52,13 @@ abstract class ListsRepository {
     String? name,
     double? quantity,
     int? unitIndex,
+    String? customUnit,
     bool? isChecked,
+
+    /// Explicit catalog link, used when the user picks the product by hand
+    /// because automatic resolution found nothing. A rename resolves the id
+    /// automatically and ignores this.
+    int? canonicalItemId,
   });
 
   Future<Result<void>> deleteItem({

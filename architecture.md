@@ -8,15 +8,20 @@ let them silently diverge.
 
 ```
 presentation  ->  domain  ->  data
-   (Flutter,        (pure       (Isar, Dio,
-   Riverpod)        Dart)       Pexels API)
+   (Flutter,        (pure         (Isar,
+   Riverpod)        Dart)      local notifs)
 ```
+
+The app is **local-first**. Lists live in Isar and the UI never waits on the
+network. When a build is given Supabase credentials, an optional account
+enables list sharing and community prices. Without credentials, every
+network path is skipped and the app behaves as a fully offline client.
 
 Dependency direction is one-way. Concretely:
 
 - `domain/entities/*` and `domain/repositories/*.dart` (the abstract
   interface) import **nothing** from `data/` or `presentation/`, and
-  nothing from `package:flutter` or `package:isar`. If you find yourself
+  nothing from `package:flutter` or `package:isar_community`. If you find yourself
   importing Isar into a domain file, the abstraction has leaked — stop and
   fix the interface instead of patching around it.
 - `data/` implements the domain interfaces and owns all I/O. Isar models
@@ -73,10 +78,10 @@ the call site, not an assumption.
 
 ## 4. Storage: Isar, single instance, embedded items
 
-- Dart API: `package:isar` 3.x. Native Android libs come from
-  **`isar_community_flutter_libs`** so `libisar.so` is **16 KB page-size
-  aligned** (required for modern Android / Play). Do not switch back to
-  `isar_flutter_libs` without checking 16 KB support.
+- Dart API + generator + native libs: **`isar_community` 3.3.2** (all three
+  packages pinned to the same version). Mixing classic `isar` 3.1.x with
+  community native 3.3.x crashes at startup (`Required 3.1.0+1 found 3.3.2`).
+  Community `libisar.so` is **16 KB page-size aligned** for modern Android / Play.
 - One `Isar` instance for the whole app, opened once in `main()` and
   injected via `isarProvider.overrideWithValue(isar)` — every datasource
   reads it through DI, never opens its own handle. This is what makes the
@@ -94,69 +99,68 @@ the call site, not an assumption.
   a genuinely singleton concept. Don't copy this pattern for anything that
   could ever have more than one instance.
 
-## 5. Security posture (read before touching `core/security/` or `core/config/`)
+## 5. Security posture (read before touching `core/security/`)
 
-### 5.1 Image API key: proxy (preferred) vs client-embedded (dev)
+### 5.1 Backend credentials are compile-time, not bundled files
 
-**Preferred (ship):** set `API_BASE_URL` to the Cloudflare Worker in
-`backend/image-proxy/`. The Worker holds `PEXELS_API_KEY` as a Wrangler
-secret. The client may keep `PEXELS_API_KEY=REPLACE_ME`. Image search goes
-through [ProxyImageRemoteDataSource](lib/features/images/data/datasources/proxy_image_remote_datasource.dart).
+`SupabaseConfig` reads `SUPABASE_URL` and `SUPABASE_PUBLISHABLE_KEY` from
+`--dart-define`. The publishable (anon) key is not a secret — row-level
+security is. An unconfigured build has empty strings and never opens a
+socket. The service-role key must never appear in the client.
 
-**Dev fallback:** if `API_BASE_URL` is unset, [EnvConfig](lib/core/config/env_config.dart)
-requires a real client `PEXELS_API_KEY`. That key is bundled as a Flutter
-asset — extractable from an APK/IPA. Acceptable only for local/dev on a
-low-privilege read-only key. Do **not** extend this pattern to auth tokens,
-payments, or any privileged credential.
+If a second remote call is ever added (retailer API, etc.), put *that*
+credential behind a server — do not bundle it as a Flutter asset.
 
-### 5.2 Fail-fast configuration
-
-`EnvConfig.load()`:
-
-- With proxy URL → succeeds without a real client Pexels key.
-- Without proxy → throws if `PEXELS_API_KEY` is missing / `REPLACE_ME`.
-- Release + client key (no proxy) → logs a warning urging proxy cutover.
-
-### 5.3 Input handling
+### 5.2 Input handling
 
 `core/security/input_sanitizer.dart` is the single choke point for
-user-typed text that crosses a trust boundary (persisted, or used to build
-a URL query param). Isar being NoSQL/typed removes classic injection risk,
-but unbounded length and control characters are still real problems
-(storage bloat, layout breakage, DoS-by-paste). Every repository method
-that accepts free text runs it through this before it touches Isar.
+user-typed text that gets persisted. Isar being NoSQL/typed removes classic
+injection risk, but unbounded length and control characters are still real
+problems (storage bloat, layout breakage, DoS-by-paste). Every repository
+method that accepts free text runs it through this before it touches Isar.
 
-### 5.4 Secure storage vs. env config — don't conflate them
+### 5.3 Sessions
 
-There is **no** secure-storage wrapper in this MVP (no auth tokens yet).
-When accounts land, add Keychain / EncryptedSharedPreferences for
-**runtime** per-user secrets — not for the Pexels key (that's a
-compile-time / Worker secret via `EnvConfig` / Wrangler).
-
-### 5.5 Network layer
-
-`ApiClient` centralizes timeouts (8s connect/receive/send — chosen to fail
-visibly rather than hang the "Add Item" modal indefinitely) and maps every
-`DioException` to a typed `AppFailure` so raw HTTP/parsing errors never
-reach the UI. Certificate pinning is **not** implemented — flagged as a
-pre-launch item once a stable backend host exists; with the image proxy
-live, pin **that** host later (`BACKEND_NEXT.md`), not `api.pexels.com`.
+`supabase_flutter` stores the session. There is still no separate
+Keychain wrapper in the app; treat a future custom token the same way.
 
 ## 6. UI layer conventions
 
-- **AppShell** (`preferences/presentation/app_shell.dart`): bottom
-  `NavigationBar` for `HomePage.lists` and `HomePage.settings` only.
-  Order comes from `AppPreferences.pageOrder` (Settings drag-reorder).
+- **One dark theme, tokens only.** `core/theme/tokens.dart` owns every surface
+  color, border, radius, and spacing step; `core/theme/app_theme.dart` maps
+  them onto a single dark `ThemeData`. Light mode and the accent-color picker
+  were removed: the pricing UI depends on a fixed accent for the cheapest-price
+  tint, which a user-chosen seed color cannot guarantee. Font family and text
+  scale stay configurable. Do not introduce `Color(0x...)` literals in widgets
+  — if a shade is missing, add it to `tokens.dart`.
+- **Single page.** `HomeScreen` is the app's only destination: AppBar
+  (hamburger → `AppDrawer`) → next-scheduled-date banner → All/Solo/Shared
+  chips (when signed in) → sectioned list cards (Overdue / This week /
+  Later). Settings, tracked stores, price lookup, notifications, and
+  account live in the drawer. Each card's 3-dot menu edits name + date +
+  frequency or deletes. List detail has the same menu plus **Share with
+  people** (live membership) and **Copy as text**.
+- **Units are an append-only enum plus one free-text escape hatch.**
+  `ItemUnit` indices are persisted by Isar, so new units go on the **end**
+  of both `ItemUnit` and `ItemUnitDb`. `ItemUnit.custom` carries its label in
+  `GroceryItem.customUnit`; typed labels are remembered in
+  `AppPreferences.customUnits` so the picker offers them again. Switching an
+  item back to a built-in unit clears the stale custom label in the
+  datasource — the one place that can enforce it for every write path.
 - **Fixed-height, text-scale-aware widgets**: `core/widgets/fixed_height_tile.dart`
   scales its minimum height with the ambient `MediaQuery` text scale factor
   instead of hardcoding pixels — the latter is exactly what breaks (clips
   or overflows) once a user increases system text size, which is a named
   requirement, not an edge case to defer.
-- **Every remote image goes through `NetworkImageWithFallback`** — no bare
-  `Image.network` anywhere in the codebase. This is both the "fallback
-  icons" requirement and the fix for the prior app's broken image-source
-  redirects: a failed load renders an icon, not a broken-image glyph or an
-  indefinite spinner.
+- **Item icons are local and derived, never fetched.**
+  `features/item_icons/` maps an item name to an `ItemIconKind` (pure Dart
+  keyword rules, unit-tested) and the presentation layer maps that kind to a
+  bundled Fluent Emoji SVG (MIT) via `iconify_flutter`. No HTTP request, no
+  API key, no attribution link, no rate limit, and identical behaviour
+  offline — which also means no broken-image or infinite-spinner states to
+  design around. Nothing image-related is persisted on `GroceryItem`.
+  Keyword matching is substring-based, so **rule order in
+  `item_icon_kind.dart` is behaviour** ("toilet" must outrank "oil").
 - **Swipe-to-edit** uses `flutter_slidable`, not a hand-rolled
   `GestureDetector` + `AnimationController`. The prior generation of this
   app almost certainly hand-rolled swipe gestures — that's a common source
@@ -173,19 +177,18 @@ live, pin **that** host later (`BACKEND_NEXT.md`), not `api.pexels.com`.
 |---|---|---|---|
 | Items per list | Low thousands (Isar embedded list is fine at this scale) | Lists with 10k+ items rendered naively | Paginate `ListView.builder` is already lazy; the actual ceiling is the embedded-document write cost on every mutation — if this becomes real, promote items to a linked collection with an index on `listId` |
 | Number of lists | Thousands, trivially | N/A at any realistic personal/small-business scale | — |
-| Concurrent multi-device sync | **Not supported at all** — Isar is local-only | Immediately, if "shared household list" is ever a requirement | This is the single biggest scope wall in the current architecture. Adding sync means introducing a remote source of truth and conflict resolution — not a small add-on. Decide explicitly, don't back into it. |
+| Concurrent multi-device sync | Local-first pull-then-push, last-write-wins per row, tombstones | Simultaneous edits of the same field on two devices | Logged overwrites; do not introduce a second conflict policy without replacing `list_merge.dart` |
 | Voice recognition accuracy | Adequate for short, common grocery nouns | Compound/uncommon items, non-English locales | Documented as a known limitation by design (editable transcript, not auto-commit) — see `voice_input_controller.dart` |
 | Flutter web | **Unsupported** — Isar schema IDs are 64-bit ints JS cannot represent exactly | `flutter run -d chrome` | Ship Android/iOS; use Windows only for desktop smoke tests |
 
 ## 8. Explicitly deferred vs shipped
 
-**Still deferred** (see `goals.md` §3 and `BACKEND_NEXT.md`): remote FCM/APNs,
-full offline-first sync, certificate pinning.
+**Still deferred** (see `goals.md` §3): remote FCM/APNs, certificate pinning.
 
-**Shipped:** Complete Shopping + schedule reconciliation; local polish
-(release env / photographer attribution / autocomplete / local
-notifications); AppShell Lists+Settings; image proxy Worker + client
-cutover path; store draft + ship checklist; `com.grocerio.app` + release
-signing + Grocerio branding/icons.
+**Shipped:** Complete Shopping + schedule reconciliation; autocomplete;
+local notifications; single-page UI with drawer; bundled offline item
+icons; catalog + user-reported prices; optional Supabase accounts, list
+sync, sharing, and ZIP-scoped community prices; store draft + ship
+checklist; `com.grocerio.app` + release signing + Grocerio branding/icons.
 
 Do not re-defer shipped items without updating `goals.md` together.

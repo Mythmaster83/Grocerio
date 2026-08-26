@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/security/input_sanitizer.dart';
 import '../../domain/entities/app_preferences.dart';
 import 'preferences_di.dart'; // preferencesRepositoryProvider
 
@@ -32,8 +33,46 @@ class PreferencesController extends AsyncNotifier<AppPreferences> {
     );
   }
 
-  Future<void> setPageOrder(List<HomePage> order) =>
-      updatePrefs((p) => p.copyWith(pageOrder: List<HomePage>.from(order)));
+  /// Remembers a unit the user typed so it shows up in the picker next time.
+  /// Returns the cleaned label, or null if it wasn't usable.
+  ///
+  /// Deduplicated case-insensitively (typing "Bunch" after "bunch" must not
+  /// create a second entry) and capped so the picker stays scannable.
+  static const int maxCustomUnits = 20;
+
+  Future<String?> rememberCustomUnit(String rawLabel) async {
+    final label = InputSanitizer.sanitizeFreeText(
+      rawLabel,
+      maxLength: InputSanitizer.maxUnitLabelLength,
+    );
+    if (label.isEmpty) return null;
+
+    final current = state.valueOrNull ?? AppPreferences.defaults();
+    final alreadyKnown = current.customUnits
+        .any((u) => u.toLowerCase() == label.toLowerCase());
+    if (alreadyKnown) return label;
+
+    final updated = [...current.customUnits, label];
+    await updatePrefs(
+      (p) => p.copyWith(
+        customUnits: updated.length > maxCustomUnits
+            ? updated.sublist(updated.length - maxCustomUnits)
+            : updated,
+      ),
+    );
+    return label;
+  }
+
+  Future<void> forgetCustomUnit(String label) async {
+    final current = state.valueOrNull ?? AppPreferences.defaults();
+    await updatePrefs(
+      (p) => p.copyWith(
+        customUnits: current.customUnits
+            .where((u) => u.toLowerCase() != label.toLowerCase())
+            .toList(),
+      ),
+    );
+  }
 }
 
 final preferencesControllerProvider =

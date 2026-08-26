@@ -1,58 +1,48 @@
 # Backend next
 
-Local-first app. Image proxy is **implemented and deployed**. Sync / pinning /
-FCM remain future phases.
+Accounts, list sync, sharing, and community prices now ship against
+Supabase (see `supabase/README.md`). What remains is optional hardening,
+not launch-blocking product.
 
-## Why
+## Why this file still exists
 
-- Bundled `PEXELS_API_KEY` can be extracted from an APK/IPA without a proxy.
-- Multi-device sync needs a remote source of truth (`architecture.md` §7).
-- Certificate pinning only against **our** host.
+- Remote push (FCM / APNs) is still out of scope — local reminders cover
+  shopping day and missed dates.
+- Certificate pinning is only meaningful against *our* host, and only after
+  that host is considered stable.
 
-## 1. Image search proxy — shipped
+## 1. Image search proxy — retired
 
-**Code:** [`backend/image-proxy/`](backend/image-proxy/) (Cloudflare Worker,
-`wrangler.jsonc`).
+Item images were replaced by bundled offline icons (`lib/features/item_icons/`),
+so the Pexels client code, `ApiClient`, `EnvConfig`, and `.env` are gone.
 
-**Client:**
-
-- `API_BASE_URL` set → [ProxyImageRemoteDataSource](lib/features/images/data/datasources/proxy_image_remote_datasource.dart).
-- Unset → direct Pexels (dev). [EnvConfig](lib/core/config/env_config.dart)
-  does not require a client Pexels key when the proxy URL is set.
-
-**Ops:**
-
-```bash
-cd backend/image-proxy
-npm install
-npx wrangler secret put PEXELS_API_KEY   # once
-npx wrangler deploy
-```
+`backend/image-proxy/` (Cloudflare Worker) is kept only as reference for a
+future feature that needs a credential-holding proxy. It is not deployed to
+by any current workflow and nothing in the app calls it — delete it if that
+future never arrives.
 
 See [backend/image-proxy/README.md](backend/image-proxy/README.md).
 
-## 2. Multi-device / shared-list sync (later)
+## 2. Sync — shipped
 
-1. Auth (anonymous → email/Apple/Google).
-2. Remote documents for lists + items (or event log).
-3. Isar becomes a **local cache**; offline queue for writes.
-4. Conflict policy: last-write-wins on item fields for v1.
+Local-first, pull-then-push, last-write-wins per row, tombstones for
+deletes. Isar remains what the UI reads. Do **not** start syncing by
+uploading Isar files.
 
-Do **not** start sync by uploading Isar files.
+## 3. Certificate pinning (later)
 
-## 3. Certificate pinning (after proxy is stable)
-
-- Pin only the **proxy / sync** host in Dio.
-- Do not pin `api.pexels.com` — the client should not call Pexels once proxied.
+- Pin only the Supabase host, using the official SDK's hook if/when one
+  exists — do not wrap the SDK in a custom Dio client just to pin.
+- There is no retailer API to pin.
 
 ## 4. Remote push (FCM / APNs)
 
 Local notifications already cover shopping-day and missed-date reminders.
-Remote push is optional later (device tokens, server fan-out).
+Remote push is optional later (device tokens, server fan-out) for "someone
+else checked milk off".
 
-## Suggested order
+## Suggested remaining order
 
-1. ~~Deploy image proxy + set `API_BASE_URL`~~ **done**
-2. Auth + sync
-3. Pin the proxy host
-4. Optionally FCM
+1. Host `PRIVACY.md` and the account-deletion URL; refresh the closed-track AAB
+2. Pin the Supabase host if abuse or MITM becomes a real concern
+3. Optionally FCM for shared-list activity

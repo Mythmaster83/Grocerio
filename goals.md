@@ -30,37 +30,39 @@ and should say so.
       limitation below, this is by design not a bug).
 - [x] Scheduling: one-time / weekly / biweekly / monthly, with a
       scheduled date shown per list (Home list order = `scheduledFor`).
-- [x] Preferences: theme mode, accent color, font, text size, home page
+- [x] Preferences: font, text size (single dark theme; theme mode and accent picker removed)
       order (**AppShell**: Lists + Settings; Settings drag-reorder).
 - [x] Fixed-height, text-scale-respecting layouts.
 - [x] Add Item / Voice Input buttons and modals.
 - [x] **Complete Shopping** — uncheck all, pop Home, advance recurring or
       delete one-time (`ROADMAP.md` Feature A).
 - [x] Real-time updates: writes stream to UI with no manual refresh.
-- [x] Local storage via Isar (community native libs for 16 KB page size).
-- [x] API images (Pexels via proxy or direct) with fallback icons.
-- [x] Secrets kept out of source control (`.gitignore` + `.env` + Wrangler
-      secret for the proxy).
+- [x] Local storage via Isar community 3.3.2 (16 KB page-aligned native libs).
+- [x] Colorful per-item icons, resolved from the item name and bundled in the
+      app (no image API, no key, no rate limit, works offline).
+- [x] No retailer API keys in the client: prices are shopper-reported.
 
 ## 3. Explicitly out of scope for this MVP (do not build without a
       deliberate scope-change decision — see `BACKEND_NEXT.md`)
 
 - **Remote push (FCM/APNs).** Local reminders are in scope; server push is not.
-- **Multi-device / shared-list sync.** Isar is local-only — see
-  `architecture.md` §7 and `BACKEND_NEXT.md`.
-- **Certificate pinning.** Defer until pinning the stable proxy host.
+- **Certificate pinning.** Optional hardening after the Supabase host is stable.
+- **Retailer live prices.** User-reported only; see the plan's "Why no Kroger API".
 
 ## 3b. Shipped increments
 
 - [x] **Complete Shopping** + **startup schedule reconciliation**.
-- [x] **Local polish**: photographer attribution, local autocomplete,
-      local notifications. `STORE_LISTING.md` / `SHIP_CHECKLIST.md`.
-- [x] **AppShell**: Lists + Settings (Schedule tab removed — duplicate of
-      Home sort order).
-- [x] **Image proxy**: `backend/image-proxy/` deployed; client uses
-      `API_BASE_URL` so release builds need no real client Pexels key.
+- [x] **Local polish**: local autocomplete, local notifications.
+      `STORE_LISTING.md` / `SHIP_CHECKLIST.md`.
+- [x] **Single-page UI**: drawer navigation, next scheduled date above the
+      lists, per-card 3-dot menu to rename / reschedule / delete without
+      opening the list.
+- [x] **Offline item icons**: bundled Fluent Emoji SVGs replace the Pexels
+      image stack and the Cloudflare proxy entirely.
 - [x] **Ship branding**: `com.grocerio.app`, Grocerio label, custom icons,
       release keystore wiring, support email in listing draft.
+- [x] **Accounts, sync, sharing, community prices**: optional Supabase
+      backend; app stays local-first without credentials.
 
 ## 4. Known limitations (status)
 
@@ -71,9 +73,9 @@ and should say so.
 | Automatic list date updates | **Done** — startup reconcile + `lastMissedOn` |
 | Complete Shopping real behavior | **Done** |
 | Voice input minor quirks | Contained — transcript editable before commit |
-| Photographer attribution deep link | **Done** |
-| Image proxy (no client Pexels key) | **Done** when `API_BASE_URL` set |
-| Sync / FCM / cert pinning | Deferred — `BACKEND_NEXT.md` |
+| Item images / rate limits / API key | **Removed** — bundled offline icons |
+| Sync / sharing / accounts | **Done** — optional, local-first |
+| FCM | Deferred — `BACKEND_NEXT.md` |
 | Flutter web | Unsupported (Isar 64-bit schema IDs) |
 | Checkbox drift | Structurally addressed |
 | Monthly date edge cases beyond Jan | **Hardened** |

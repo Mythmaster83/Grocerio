@@ -3,9 +3,11 @@
 #
 
 list(APPEND FLUTTER_PLUGIN_LIST
-  connectivity_plus
+  app_links
   flutter_timezone
+  geolocator_windows
   isar_community_flutter_libs
+  permission_handler_windows
   speech_to_text_windows
   url_launcher_windows
 )

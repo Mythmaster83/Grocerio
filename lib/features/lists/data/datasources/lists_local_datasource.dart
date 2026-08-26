@@ -1,4 +1,4 @@
-import 'package:isar/isar.dart';
+import 'package:isar_community/isar.dart';
 import 'package:uuid/uuid.dart';
 import '../../../../core/errors/exceptions.dart';
 import '../models/grocery_item_model.dart';
@@ -13,12 +13,19 @@ class ListsLocalDataSource {
 
   ListsLocalDataSource(this._isar, {Uuid? uuid}) : _uuid = uuid ?? const Uuid();
 
+  /// Every read here excludes tombstoned rows. Deleted lists are kept on disk
+  /// until sync has carried the deletion elsewhere, so "deleted" is a filter
+  /// condition in this layer, not an absent row.
   Stream<List<GroceryListModel>> watchLists() {
     return _isar.groceryListModels
         .where()
         .watch(fireImmediately: true)
         .asyncMap(
-          (_) => _isar.groceryListModels.where().sortByScheduledFor().findAll(),
+          (_) => _isar.groceryListModels
+              .filter()
+              .deletedAtIsNull()
+              .sortByScheduledFor()
+              .findAll(),
         );
   }
 
@@ -30,11 +37,15 @@ class ListsLocalDataSource {
         .asyncMap((_) => _findByPublicId(publicId));
   }
 
-  Future<GroceryListModel?> _findByPublicId(String publicId) =>
-      _isar.groceryListModels.filter().publicIdEqualTo(publicId).findFirst();
+  Future<GroceryListModel?> _findByPublicId(String publicId) => _isar
+      .groceryListModels
+      .filter()
+      .publicIdEqualTo(publicId)
+      .deletedAtIsNull()
+      .findFirst();
 
   Future<List<GroceryListModel>> getAllLists() =>
-      _isar.groceryListModels.where().findAll();
+      _isar.groceryListModels.filter().deletedAtIsNull().findAll();
 
   Future<GroceryListModel?> getList(String publicId) =>
       _findByPublicId(publicId);
@@ -54,10 +65,10 @@ class ListsLocalDataSource {
           ..name = i.name
           ..quantity = i.quantity
           ..unit = i.unit
+          ..customUnit = i.customUnit
+          ..canonicalItemId = i.canonicalItemId
+          ..deletedAt = i.deletedAt
           ..isChecked = uncheckAll ? false : i.isChecked
-          ..imageUrl = i.imageUrl
-          ..imagePhotographer = i.imagePhotographer
-          ..imagePhotographerUrl = i.imagePhotographerUrl
           ..updatedAt = uncheckAll ? now : i.updatedAt,
     ];
   }
@@ -70,6 +81,7 @@ class ListsLocalDataSource {
     DateTime? scheduledFor,
     DateTime? lastMissedOn,
     bool clearLastMissedOn = false,
+    DateTime? deletedAt,
     List<GroceryItemModel>? items,
   }) async {
     final copy = GroceryListModel()
@@ -81,6 +93,11 @@ class ListsLocalDataSource {
       ..createdAt = existing.createdAt
       ..lastMissedOn =
           clearLastMissedOn ? null : (lastMissedOn ?? existing.lastMissedOn)
+      // Every write goes through here, so this is the one place that can
+      // guarantee updatedAt actually tracks mutations for sync.
+      ..updatedAt = DateTime.now()
+      ..deletedAt = deletedAt ?? existing.deletedAt
+      ..ownerId = existing.ownerId
       ..items = items ?? _cloneItems(existing.items);
     await _isar.groceryListModels.put(copy);
   }
@@ -92,6 +109,7 @@ class ListsLocalDataSource {
       final matches = <String>[];
       for (final list in lists) {
         for (final item in list.items) {
+          if (item.deletedAt != null) continue;
           final name = item.name.trim();
           if (name.isEmpty) continue;
           final key = name.toLowerCase();
@@ -120,6 +138,7 @@ class ListsLocalDataSource {
       ..scheduledFor = scheduledFor
       ..createdAt = DateTime.now()
       ..lastMissedOn = null
+      ..updatedAt = DateTime.now()
       ..items = [];
     try {
       await _isar.writeTxn(() => _isar.groceryListModels.put(model));
@@ -129,11 +148,44 @@ class ListsLocalDataSource {
     }
   }
 
+  /// Rename and/or reschedule a list. Setting a new [scheduledFor] clears the
+  /// missed-date flag: the user has just chosen the date on purpose, so the
+  /// old "you skipped this" notice is stale by definition.
+  Future<void> updateListDetails({
+    required String listPublicId,
+    String? name,
+    DateTime? scheduledFor,
+    ScheduleFrequencyDb? frequency,
+  }) async {
+    try {
+      await _isar.writeTxn(() async {
+        final model = await _findByPublicId(listPublicId);
+        if (model == null) {
+          throw StorageException('List not found: $listPublicId');
+        }
+        await _putListCopy(
+          model,
+          name: name,
+          scheduledFor: scheduledFor,
+          frequency: frequency,
+          clearLastMissedOn: scheduledFor != null,
+        );
+      });
+    } catch (e) {
+      if (e is StorageException) rethrow;
+      throw StorageException('Failed to update list', cause: e);
+    }
+  }
+
+  /// Tombstones the list instead of removing the row. A hard delete cannot be
+  /// synced: the other device has no way to tell "deleted here" from "not
+  /// created here yet" and would simply push the list back.
   Future<void> deleteList(String publicId) async {
     try {
       await _isar.writeTxn(() async {
         final model = await _findByPublicId(publicId);
-        if (model != null) await _isar.groceryListModels.delete(model.isarId);
+        if (model == null) return;
+        await _putListCopy(model, deletedAt: DateTime.now());
       });
     } catch (e) {
       throw StorageException('Failed to delete list', cause: e);
@@ -145,19 +197,17 @@ class ListsLocalDataSource {
     required String name,
     required double quantity,
     required ItemUnitDb unit,
-    String? imageUrl,
-    String? imagePhotographer,
-    String? imagePhotographerUrl,
+    String? customUnit,
+    int? canonicalItemId,
   }) async {
     final item = GroceryItemModel()
       ..id = _uuid.v4()
       ..name = name
       ..quantity = quantity
       ..unit = unit
+      ..customUnit = unit == ItemUnitDb.custom ? customUnit : null
+      ..canonicalItemId = canonicalItemId
       ..isChecked = false
-      ..imageUrl = imageUrl
-      ..imagePhotographer = imagePhotographer
-      ..imagePhotographerUrl = imagePhotographerUrl
       ..updatedAt = DateTime.now();
 
     try {
@@ -184,6 +234,8 @@ class ListsLocalDataSource {
     String? name,
     double? quantity,
     ItemUnitDb? unit,
+    String? customUnit,
+    int? canonicalItemId,
     bool? isChecked,
   }) async {
     try {
@@ -197,15 +249,22 @@ class ListsLocalDataSource {
         if (idx == -1) throw StorageException('Item not found: $itemId');
 
         final existing = items[idx];
+        final nextUnit = unit ?? existing.unit;
         items[idx] = GroceryItemModel()
           ..id = existing.id
           ..name = name ?? existing.name
           ..quantity = quantity ?? existing.quantity
-          ..unit = unit ?? existing.unit
+          ..unit = nextUnit
+          // Switching away from a custom unit must drop its stale label,
+          // otherwise "2 kg" would still carry a leftover "bunch".
+          ..customUnit = nextUnit == ItemUnitDb.custom
+              ? (customUnit ?? existing.customUnit)
+              : null
+          // A rename re-resolves the catalog match, so the caller passes the
+          // new id; absent that, keep whatever was already resolved.
+          ..canonicalItemId = canonicalItemId ?? existing.canonicalItemId
+          ..deletedAt = existing.deletedAt
           ..isChecked = isChecked ?? existing.isChecked
-          ..imageUrl = existing.imageUrl
-          ..imagePhotographer = existing.imagePhotographer
-          ..imagePhotographerUrl = existing.imagePhotographerUrl
           ..updatedAt = DateTime.now();
 
         await _putListCopy(model, items: items);
@@ -216,6 +275,8 @@ class ListsLocalDataSource {
     }
   }
 
+  /// Tombstones the item; see [deleteList] for why the row survives.
+  /// `GroceryListModel.toDomain` filters tombstones out of the UI.
   Future<void> deleteItem({
     required String listPublicId,
     required String itemId,
@@ -226,10 +287,14 @@ class ListsLocalDataSource {
         if (model == null) {
           throw StorageException('List not found: $listPublicId');
         }
-        await _putListCopy(
-          model,
-          items: _cloneItems(model.items).where((i) => i.id != itemId).toList(),
-        );
+        final now = DateTime.now();
+        final items = _cloneItems(model.items);
+        final idx = items.indexWhere((i) => i.id == itemId);
+        if (idx == -1) return;
+        items[idx]
+          ..deletedAt = now
+          ..updatedAt = now;
+        await _putListCopy(model, items: items);
       });
     } catch (e) {
       if (e is StorageException) rethrow;

@@ -1,16 +1,48 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/utils/result.dart';
 import '../../../../core/widgets/confirm_dialog.dart';
+import '../../../pricing/presentation/widgets/post_shopping_price_sheet.dart';
+import '../../../sharing/presentation/widgets/share_list_sheet.dart';
+import '../../domain/entities/grocery_item.dart';
+import '../../domain/entities/grocery_list.dart';
+import '../../domain/list_text_export.dart';
 import '../providers/list_actions_controller.dart';
 import '../providers/lists_provider.dart';
 import '../widgets/add_item_modal.dart';
+import '../widgets/edit_list_modal.dart';
 import '../widgets/item_tile.dart';
 import '../widgets/missed_date_indicator.dart';
+
+enum _ListDetailAction { copyAsText, shareWithPeople, edit, delete }
 
 class ListDetailScreen extends ConsumerWidget {
   final String listId;
   const ListDetailScreen({super.key, required this.listId});
+
+  /// Copies the list as plain text so it can be pasted into any messaging app.
+  /// Still worth keeping alongside real sharing: it needs no account on either
+  /// end, which is the difference between "send my wife the list" working now
+  /// and working after she installs the app.
+  Future<void> _shareAsText(BuildContext context, GroceryList list) async {
+    await Clipboard.setData(ClipboardData(text: formatListForSharing(list)));
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('List copied — paste it anywhere')),
+    );
+  }
+
+  Future<void> _confirmDelete(BuildContext context, WidgetRef ref) async {
+    final confirmed = await showConfirmDialog(
+      context,
+      title: 'Delete list?',
+      message: 'This list and all its items will be permanently removed.',
+    );
+    if (!confirmed) return;
+    await ref.read(listActionsControllerProvider.notifier).deleteList(listId);
+    if (context.mounted) Navigator.of(context).pop();
+  }
 
   Future<void> _completeShopping(BuildContext context, WidgetRef ref) async {
     final confirmed = await showConfirmDialog(
@@ -24,12 +56,23 @@ class ListDetailScreen extends ConsumerWidget {
     );
     if (!confirmed || !context.mounted) return;
 
+    // Snapshot the checked items first: completing the trip unchecks
+    // everything, so afterwards there is no record of what was actually bought.
+    final purchased = ref
+            .read(listDetailStreamProvider(listId))
+            .valueOrNull
+            ?.items
+            .where((item) => item.isChecked)
+            .toList(growable: false) ??
+        const <GroceryItem>[];
+
     final ok = await ref
         .read(listActionsControllerProvider.notifier)
         .completeShopping(listId);
-    if (ok && context.mounted) {
-      Navigator.of(context).pop();
-    }
+    if (!ok || !context.mounted) return;
+
+    await showPostShoppingPriceSheet(context, items: purchased);
+    if (context.mounted) Navigator.of(context).pop();
   }
 
   @override
@@ -74,22 +117,66 @@ class ListDetailScreen extends ConsumerWidget {
             },
             orElse: () => const SizedBox.shrink(),
           ),
-          IconButton(
-            icon: const Icon(Icons.delete_outline),
-            onPressed: () async {
-              final confirmed = await showConfirmDialog(
-                context,
-                title: 'Delete list?',
-                message:
-                    'This list and all its items will be permanently removed.',
-              );
-              if (confirmed) {
-                await ref
-                    .read(listActionsControllerProvider.notifier)
-                    .deleteList(listId);
-                if (context.mounted) Navigator.of(context).pop();
+          PopupMenuButton<_ListDetailAction>(
+            icon: const Icon(Icons.more_vert),
+            tooltip: 'List options',
+            onSelected: (action) async {
+              final list = listAsync.valueOrNull;
+              switch (action) {
+                case _ListDetailAction.copyAsText:
+                  if (list != null) await _shareAsText(context, list);
+                case _ListDetailAction.shareWithPeople:
+                  if (list != null) {
+                    await showShareListSheet(
+                      context,
+                      listId: list.id,
+                      listName: list.name,
+                    );
+                  }
+                case _ListDetailAction.edit:
+                  if (list != null) await showEditListModal(context, list: list);
+                case _ListDetailAction.delete:
+                  await _confirmDelete(context, ref);
               }
             },
+            itemBuilder: (_) => const [
+              PopupMenuItem(
+                value: _ListDetailAction.shareWithPeople,
+                child: ListTile(
+                  dense: true,
+                  contentPadding: EdgeInsets.zero,
+                  leading: Icon(Icons.group_add_outlined),
+                  title: Text('Share with people'),
+                ),
+              ),
+              PopupMenuItem(
+                value: _ListDetailAction.copyAsText,
+                child: ListTile(
+                  dense: true,
+                  contentPadding: EdgeInsets.zero,
+                  leading: Icon(Icons.ios_share_outlined),
+                  title: Text('Copy as text'),
+                ),
+              ),
+              PopupMenuItem(
+                value: _ListDetailAction.edit,
+                child: ListTile(
+                  dense: true,
+                  contentPadding: EdgeInsets.zero,
+                  leading: Icon(Icons.edit_calendar_outlined),
+                  title: Text('Edit name, date & repeat'),
+                ),
+              ),
+              PopupMenuItem(
+                value: _ListDetailAction.delete,
+                child: ListTile(
+                  dense: true,
+                  contentPadding: EdgeInsets.zero,
+                  leading: Icon(Icons.delete_outline),
+                  title: Text('Delete list'),
+                ),
+              ),
+            ],
           ),
         ],
       ),

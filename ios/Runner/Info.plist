@@ -28,6 +28,8 @@
     <string>Uses mic to input grocery item names</string>
     <key>NSSpeechRecognitionUsageDescription</key>
     <string>Uses speech recognition to map user input to grocery item name</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Grocerio uses your location to sort grocery stores nearest first so you can track the ones you shop at.</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>UIApplicationSceneManifest</key>

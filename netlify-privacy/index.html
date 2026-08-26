@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Grocerio Privacy Policy</title>
+  <meta name="description" content="Privacy policy and account deletion for the Grocerio grocery list app." />
+  <style>
+    :root {
+      --bg: #0b0d0c;
+      --surface: #141815;
+      --text: #f1f4f2;
+      --muted: #8b948d;
+      --accent: #7fe0a8;
+      --border: rgba(255, 255, 255, 0.08);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.55;
+    }
+    header {
+      border-bottom: 1px solid var(--border);
+      padding: 1.25rem 1.5rem;
+      background: var(--surface);
+    }
+    header a {
+      color: var(--accent);
+      text-decoration: none;
+      font-weight: 600;
+    }
+    main {
+      max-width: 42rem;
+      margin: 0 auto;
+      padding: 2rem 1.5rem 4rem;
+    }
+    h1 { font-size: 1.75rem; margin: 0 0 0.35rem; }
+    h2 {
+      font-size: 1.2rem;
+      margin: 2rem 0 0.75rem;
+      padding-top: 0.5rem;
+      scroll-margin-top: 1rem;
+    }
+    p, li { color: var(--text); }
+    .muted { color: var(--muted); font-size: 0.95rem; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.92rem;
+      margin: 0.75rem 0 1rem;
+    }
+    th, td {
+      border: 1px solid var(--border);
+      padding: 0.55rem 0.65rem;
+      text-align: left;
+      vertical-align: top;
+    }
+    th { background: var(--surface); color: var(--muted); font-weight: 600; }
+    ul { padding-left: 1.2rem; }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1rem 1.1rem;
+      margin: 1rem 0;
+    }
+    .card strong { color: var(--accent); }
+    a { color: var(--accent); }
+  </style>
+</head>
+<body>
+  <header>
+    <a href="/">Grocerio</a>
+  </header>
+  <main>
+    <h1>Grocerio privacy policy</h1>
+    <p class="muted">Last updated: 22 August 2026</p>
+    <p>
+      This page is the public privacy policy for the Grocerio Android app
+      (package <code>com.grocerio.app</code>). It is also the public
+      <a href="#account-deletion">account deletion</a> page required by Google Play.
+    </p>
+    <p class="muted">Contact: <a href="mailto:aliahmedaziz08@gmail.com">aliahmedaziz08@gmail.com</a></p>
+
+    <h2 id="what-grocerio-is">What Grocerio is</h2>
+    <p>
+      Grocerio is a grocery-list app. Lists, item check-offs, schedules, and
+      reminders work on your phone without an account. Signing in is optional
+      and only needed if you want to share a list with someone else or see
+      prices other shoppers nearby have reported.
+    </p>
+
+    <h2 id="data-on-device">Data the app stores on your device</h2>
+    <table>
+      <thead>
+        <tr><th>Data</th><th>Why</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Lists, items, check-offs, schedules</td><td>Core app</td></tr>
+        <tr><td>Font and text-size preferences, tracked store locations</td><td>Settings you chose</td></tr>
+        <tr><td>Approximate device location (when you allow it)</td><td>Only used on-device to sort stores nearest first; not uploaded as a continuous track</td></tr>
+        <tr><td>Prices you typed</td><td>So they reappear on your lists</td></tr>
+        <tr><td>A random device id</td><td>Stamped on local price reports before you sign in, so a bad report can be ignored later without knowing who you are</td></tr>
+      </tbody>
+    </table>
+    <p>
+      This on-device copy is the source of truth. The app keeps working with
+      the network off.
+    </p>
+
+    <h2 id="data-that-leaves">Data that leaves the device (only if you sign in)</h2>
+    <p>Signing in uses an email magic link (no password). We store:</p>
+    <table>
+      <thead>
+        <tr><th>Data</th><th>Why</th><th>Who sees it</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Email and account id</td>
+          <td>Sign-in, invites, account deletion</td>
+          <td>You, and anyone you invite to a list (they see your email on that list)</td>
+        </tr>
+        <tr>
+          <td>Lists and items you own or were invited to</td>
+          <td>Sync and sharing</td>
+          <td>You and the members of that list</td>
+        </tr>
+        <tr>
+          <td>Prices you report, with store location, unit, time, and ZIP of that store</td>
+          <td>So other shoppers in your area can compare</td>
+          <td>Any signed-in user whose ZIP prefix matches yours</td>
+        </tr>
+        <tr>
+          <td>ZIP derived from stores you track</td>
+          <td>Scopes which community prices you send and receive</td>
+          <td>Stored with each report you submit</td>
+        </tr>
+      </tbody>
+    </table>
+    <p>
+      We do not sell this data. We do not run ads. We do not use a retailer API:
+      every price in Grocerio was typed by a shopper and <strong>may be wrong</strong>.
+      Treat prices as hints, not as the store's official amount.
+    </p>
+
+    <h2 id="permissions">Permissions</h2>
+    <ul>
+      <li><strong>Internet</strong> — sign-in, list sync, sharing, and community prices. Lists still work if the network is down.</li>
+      <li><strong>Location (optional)</strong> — used only on this device to sort grocery locations nearest first when you pick stores to track. Not used for continuous tracking or ads. GPS coordinates are not uploaded as a live track; area for community prices uses the ZIP of stores you track.</li>
+      <li><strong>Microphone</strong> — optional voice input when adding an item. Audio is handled by the device's speech service and is not stored by Grocerio.</li>
+      <li><strong>Notifications</strong> — local reminders on a shopping day, and a notice if a planned date was missed. These are scheduled on the device, not pushed from a server.</li>
+    </ul>
+
+    <h2 id="sharing-lists">Sharing lists</h2>
+    <p>
+      You can copy a list as plain text without an account (that paste never
+      reaches our servers). Live sharing — where someone else can check items
+      off the same list — requires both of you to have accounts. Only the list
+      owner can invite. Invites look up the other person's email inside the
+      server; the app cannot browse other people's addresses.
+    </p>
+
+    <h2 id="community-prices">Community prices</h2>
+    <p>
+      A price you report while signed in is stored with your account id, the
+      product, the store location, the amount, and that store's ZIP. Other
+      signed-in shoppers whose ZIP starts with the same three digits can see
+      it. If you have not tracked any stores, we do not pull other people's
+      prices onto your phone.
+    </p>
+    <p>
+      You can still report prices while signed out. Those stay on the device
+      until you sign in, then they upload under your account.
+    </p>
+
+    <h2 id="account-deletion">Account deletion</h2>
+    <div class="card">
+      <p>
+        Google requires a way to delete an account both <strong>in the app</strong>
+        and at a <strong>public URL</strong>. This heading is that public URL
+        (<code>#account-deletion</code>).
+      </p>
+      <ul>
+        <li>
+          <strong>In the app:</strong> Menu → Account → Delete account. This
+          removes the account, lists you own in the cloud, memberships, and
+          prices you reported. Lists already stored on this phone stay on
+          this phone.
+        </li>
+        <li>
+          <strong>Public request:</strong> email
+          <a href="mailto:aliahmedaziz08@gmail.com?subject=Delete%20my%20Grocerio%20account">aliahmedaziz08@gmail.com</a>
+          from the address on the account with the subject
+          <strong>Delete my Grocerio account</strong>. We complete deletion
+          within <strong>30 days</strong>.
+        </li>
+      </ul>
+    </div>
+
+    <h2 id="data-retention">Data retention</h2>
+    <p>
+      Cloud lists and prices exist until you delete the list, delete the
+      price's underlying account, or delete the account itself. Local data
+      remains until you clear app storage or uninstall.
+    </p>
+
+    <h2 id="children">Children</h2>
+    <p>Grocerio is not directed at children under 13.</p>
+
+    <h2 id="changes">Changes</h2>
+    <p>
+      If this policy changes in a way that affects how we use your data, we
+      will update the date above and this hosted page. Continued use after
+      that date is acceptance of the new policy.
+    </p>
+  </main>
+</body>
+</html>
