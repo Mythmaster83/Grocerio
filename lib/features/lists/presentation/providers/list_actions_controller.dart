@@ -136,9 +136,7 @@ class ListActionsController extends AsyncNotifier<void> {
     final ok = _settle(result);
     if (ok) {
       await ref.read(listNotificationSchedulerProvider).cancelForList(listId);
-      // Tombstone must leave this device immediately; the 3s write debounce
-      // is what left the list alive on the other phone.
-      ref.read(syncStatusProvider.notifier).requestSync(immediate: true);
+      await ref.read(syncStatusProvider.notifier).syncNow();
     }
     return ok;
   }
@@ -158,7 +156,7 @@ class ListActionsController extends AsyncNotifier<void> {
     final scheduler = ref.read(listNotificationSchedulerProvider);
     if (prior!.frequency == ScheduleFrequency.oneTime) {
       await scheduler.cancelForList(listId);
-      ref.read(syncStatusProvider.notifier).requestSync(immediate: true);
+      await ref.read(syncStatusProvider.notifier).syncNow();
     } else {
       final after = await repo.getList(listId);
       await after.when(

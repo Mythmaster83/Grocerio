@@ -19,9 +19,12 @@ class AppDrawer extends ConsumerWidget {
   const AppDrawer({super.key});
 
   void _go(BuildContext context, Widget screen) {
-    // Close first so the drawer isn't left open behind the pushed route.
-    Navigator.of(context).pop();
-    Navigator.of(context).push(MaterialPageRoute(builder: (_) => screen));
+    // Grab the scaffold navigator *before* closing the drawer. Popping first
+    // disposes the drawer context; a follow-up push from that context can
+    // open a blank route (Your stores was the heavy screen that showed it).
+    final nav = Navigator.of(context);
+    nav.pop();
+    nav.push(MaterialPageRoute(builder: (_) => screen));
   }
 
   @override

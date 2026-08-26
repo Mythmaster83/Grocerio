@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io' show Platform;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -108,10 +109,31 @@ class _TrackedStoresScreenState extends ConsumerState<TrackedStoresScreen> {
     };
   }
 
+  LocationSettings _locationSettings(LocationPrecision precision) {
+    final accuracy = _accuracyFor(precision);
+    const limit = Duration(seconds: 8);
+    if (Platform.isAndroid) {
+      return AndroidSettings(accuracy: accuracy, timeLimit: limit);
+    }
+    return LocationSettings(accuracy: accuracy, timeLimit: limit);
+  }
+
+  bool _isUsableLastKnown(Position position) {
+    if (!GeoDistance.isPlausible(
+      lat: position.latitude,
+      lon: position.longitude,
+    )) {
+      return false;
+    }
+    final age = DateTime.now().difference(position.timestamp).abs();
+    return age < const Duration(minutes: 15);
+  }
+
   Future<void> _applyLastKnown() async {
     try {
       final last = await Geolocator.getLastKnownPosition();
       if (last == null || !mounted) return;
+      if (!_isUsableLastKnown(last)) return;
       final label = await _placeLabelFor(last);
       if (!mounted) return;
       setState(() {
@@ -177,27 +199,28 @@ class _TrackedStoresScreenState extends ConsumerState<TrackedStoresScreen> {
       Position position;
       try {
         position = await Geolocator.getCurrentPosition(
-          locationSettings: LocationSettings(
-            accuracy: _accuracyFor(mode),
-            timeLimit: const Duration(seconds: 10),
-          ),
+          locationSettings: _locationSettings(mode),
         );
       } catch (_) {
         if (mode == LocationPrecision.precise) {
           position = await Geolocator.getCurrentPosition(
-            locationSettings: const LocationSettings(
-              accuracy: LocationAccuracy.low,
-              timeLimit: Duration(seconds: 10),
-            ),
+            locationSettings: _locationSettings(LocationPrecision.approximate),
           );
           if (mounted) {
             setState(() => _precision = LocationPrecision.approximate);
           }
         } else {
           final last = await Geolocator.getLastKnownPosition();
-          if (last == null) rethrow;
+          if (last == null || !_isUsableLastKnown(last)) rethrow;
           position = last;
         }
+      }
+
+      if (!GeoDistance.isPlausible(
+        lat: position.latitude,
+        lon: position.longitude,
+      )) {
+        throw StateError('unusable fix');
       }
 
       final label = await _placeLabelFor(position);
@@ -387,7 +410,12 @@ class _TrackedStoresScreenState extends ConsumerState<TrackedStoresScreen> {
       for (final store in filtered)
         _StoreRow(
           store: store,
-          miles: (pos != null && store.hasCoordinates)
+          miles: (pos != null &&
+                  store.hasCoordinates &&
+                  GeoDistance.isPlausible(
+                    lat: store.latitude!,
+                    lon: store.longitude!,
+                  ))
               ? GeoDistance.milesBetween(
                   lat1: pos.latitude,
                   lon1: pos.longitude,
@@ -419,6 +447,9 @@ class _TrackedStoresScreenState extends ConsumerState<TrackedStoresScreen> {
           .where((r) => r.miles != null && r.miles! <= 40)
           .toList();
       if (nearby.isNotEmpty) return nearby;
+      final nearest = withDistance.where((r) => r.miles != null).toList()
+        ..sort((a, b) => a.miles!.compareTo(b.miles!));
+      return nearest.take(40).toList(growable: false);
     }
 
     // Without a GPS fix, do not dump the whole US directory — that freeze is
@@ -442,9 +473,10 @@ class _TrackedStoresScreenState extends ConsumerState<TrackedStoresScreen> {
     // stream used to leave this route looking blank.
     return Scaffold(
       appBar: AppBar(title: const Text('Your stores')),
-      body: CustomScrollView(
-        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-        slivers: [
+      body: SafeArea(
+        child: CustomScrollView(
+          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+          slivers: [
           SliverPadding(
             padding: const EdgeInsets.fromLTRB(
               AppSpacing.lg,
@@ -470,7 +502,9 @@ class _TrackedStoresScreenState extends ConsumerState<TrackedStoresScreen> {
                     locating: _locating,
                     error: _locationError,
                     placeLabel: _placeLabel,
-                    sourceLine: '$_sourceLabel · ${_updatedLabel()}',
+                    sourceLine: _locating && _placeLabel != null
+                        ? 'Updating fix · $_sourceLabel'
+                        : '$_sourceLabel · ${_updatedLabel()}',
                     precision: _precision,
                     needsPermission: _needsPermission,
                     onUpdate: () => _refreshLocation(),
@@ -525,21 +559,23 @@ class _TrackedStoresScreenState extends ConsumerState<TrackedStoresScreen> {
                   ),
                 ),
                 if (rows.isEmpty)
-                  SliverFillRemaining(
-                    hasScrollBody: false,
-                    child: Center(
-                      child: Padding(
-                        padding: const EdgeInsets.all(AppSpacing.lg),
-                        child: Text(
-                          _search.text.trim().isNotEmpty
-                              ? 'No stores match. Try another city or ZIP.'
-                              : _position == null
-                                  ? 'No stores yet. Use location or search.'
-                                  : 'No stores match. Try clearing nearby-only.',
-                          textAlign: TextAlign.center,
-                          style: theme.textTheme.bodyMedium
-                              ?.copyWith(color: AppColors.textMuted),
-                        ),
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(
+                        AppSpacing.lg,
+                        AppSpacing.xl,
+                        AppSpacing.lg,
+                        AppSpacing.xxl,
+                      ),
+                      child: Text(
+                        _search.text.trim().isNotEmpty
+                            ? 'No stores match. Try another city or ZIP.'
+                            : _position == null
+                                ? 'No stores yet. Use location or search.'
+                                : 'No stores match. Try clearing nearby-only.',
+                        textAlign: TextAlign.center,
+                        style: theme.textTheme.bodyMedium
+                            ?.copyWith(color: AppColors.textMuted),
                       ),
                     ),
                   )
@@ -555,35 +591,16 @@ class _TrackedStoresScreenState extends ConsumerState<TrackedStoresScreen> {
                       itemCount: rows.length,
                       itemBuilder: (context, index) {
                         final row = rows[index];
-                        final store = row.store;
-                        final distance = row.miles == null
-                            ? null
-                            : GeoDistance.formatMiles(
-                                row.miles!,
-                                approximate: _precision ==
-                                    LocationPrecision.approximate,
-                              );
-                        final address = store.subtitle;
-                        return Card(
-                          margin:
-                              const EdgeInsets.only(bottom: AppSpacing.sm),
-                          child: SwitchListTile(
-                            value: store.trackedByUser,
-                            onChanged: (v) => _toggle(store, v),
-                            isThreeLine: address.isNotEmpty,
-                            title: Text(store.name),
-                            subtitle: Text(
-                              [
-                                if (distance != null) distance,
-                                if (address.isNotEmpty) address,
-                                store.trackedByUser
-                                    ? 'On · used in comparisons'
-                                    : 'Off',
-                              ].join(' · '),
-                              style: theme.textTheme.bodySmall
-                                  ?.copyWith(color: AppColors.textMuted),
-                            ),
-                          ),
+                        return _StoreTile(
+                          store: row.store,
+                          distance: row.miles == null
+                              ? null
+                              : GeoDistance.formatMiles(
+                                  row.miles!,
+                                  approximate: _precision ==
+                                      LocationPrecision.approximate,
+                                ),
+                          onToggle: (v) => _toggle(row.store, v),
                         );
                       },
                     ),
@@ -591,29 +608,29 @@ class _TrackedStoresScreenState extends ConsumerState<TrackedStoresScreen> {
               ];
             },
             loading: () => [
-              const SliverFillRemaining(
-                hasScrollBody: false,
-                child: Center(child: CircularProgressIndicator()),
+              const SliverToBoxAdapter(
+                child: Padding(
+                  padding: EdgeInsets.symmetric(vertical: AppSpacing.xxl),
+                  child: Center(child: CircularProgressIndicator()),
+                ),
               ),
             ],
             error: (error, _) => [
-              SliverFillRemaining(
-                hasScrollBody: false,
-                child: Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(AppSpacing.lg),
-                    child: Text(
-                      error is AppFailure
-                          ? error.message
-                          : 'Could not load stores.',
-                      textAlign: TextAlign.center,
-                    ),
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.all(AppSpacing.lg),
+                  child: Text(
+                    error is AppFailure
+                        ? error.message
+                        : 'Could not load stores.',
+                    textAlign: TextAlign.center,
                   ),
                 ),
               ),
             ],
           ),
         ],
+        ),
       ),
     );
   }
@@ -659,19 +676,19 @@ class _LocationCard extends StatelessWidget {
                 ),
                 const SizedBox(width: AppSpacing.sm),
                 Expanded(
-                  child: locating
+                  child: locating && placeLabel == null && error == null
                       ? Text(
                           'Finding your location…',
                           style: theme.textTheme.titleSmall,
                         )
-                      : error != null
+                      : error != null && placeLabel == null
                           ? Text(
                               error!,
                               style: theme.textTheme.bodyMedium?.copyWith(
                                 color: theme.colorScheme.error,
                               ),
                             )
-                          : needsPermission
+                          : needsPermission && placeLabel == null
                               ? Text(
                                   'Use your location to measure distances '
                                   'to stores.',
@@ -682,15 +699,20 @@ class _LocationCard extends StatelessWidget {
                                       CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      placeLabel ?? 'Location unknown',
+                                      placeLabel ??
+                                          (locating
+                                              ? 'Finding your location…'
+                                              : 'Location unknown'),
                                       style: theme.textTheme.titleSmall,
                                     ),
                                     const SizedBox(height: 2),
                                     Text(
-                                      sourceLine,
+                                      error ?? sourceLine,
                                       style: theme.textTheme.bodySmall
                                           ?.copyWith(
-                                        color: AppColors.textMuted,
+                                        color: error != null
+                                            ? theme.colorScheme.error
+                                            : AppColors.textMuted,
                                       ),
                                     ),
                                   ],
@@ -733,6 +755,66 @@ class _LocationCard extends StatelessWidget {
                 ),
               ],
             ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _StoreTile extends StatelessWidget {
+  final Store store;
+  final String? distance;
+  final ValueChanged<bool> onToggle;
+
+  const _StoreTile({
+    required this.store,
+    required this.distance,
+    required this.onToggle,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final muted = theme.textTheme.bodySmall?.copyWith(color: AppColors.textMuted);
+    final address = store.subtitle;
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(
+          AppSpacing.md,
+          AppSpacing.sm,
+          AppSpacing.sm,
+          AppSpacing.sm,
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(store.name, style: theme.textTheme.titleSmall),
+                  if (distance != null) ...[
+                    const SizedBox(height: 2),
+                    Text(distance!, style: muted),
+                  ],
+                  if (address.isNotEmpty) ...[
+                    const SizedBox(height: 2),
+                    Text(address, style: muted),
+                  ],
+                  const SizedBox(height: 2),
+                  Text(
+                    store.trackedByUser
+                        ? 'On · used in comparisons'
+                        : 'Off',
+                    style: muted,
+                  ),
+                ],
+              ),
+            ),
+            Switch(value: store.trackedByUser, onChanged: onToggle),
           ],
         ),
       ),

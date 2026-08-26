@@ -24,7 +24,8 @@ to confirm two test emails.
 
 - A Supabase project whose tables match `migrations/0001_init.sql`,
   `migrations/0002_sharing.sql`, `migrations/0003_tracked_stores.sql`,
-  and `migrations/0004_tombstone_guard.sql`
+  `migrations/0004_tombstone_guard.sql`, and
+  `migrations/0005_realtime_lists.sql`
 - Email magic-link login that returns into the Android app
 - Two test accounts used to prove that User B cannot read User A's list
   until invited
@@ -101,6 +102,7 @@ The blueprint lives in two SQL files in this folder:
 | [`migrations/0002_sharing.sql`](migrations/0002_sharing.sql) | `list_members_view` — the function the Share sheet uses to show emails |
 | [`migrations/0003_tracked_stores.sql`](migrations/0003_tracked_stores.sql) | `user_tracked_stores` — which store locations follow the account |
 | [`migrations/0004_tombstone_guard.sql`](migrations/0004_tombstone_guard.sql) | Server trigger: never clear `deleted_at` on lists/items |
+| [`migrations/0005_realtime_lists.sql`](migrations/0005_realtime_lists.sql) | Realtime publication so a delete reaches the other phone quickly |
 
 They are numbered so you always run **0001 first, then 0002**. 0002 calls
 `can_access_list`, which 0001 defines. Running 0002 alone errors.
@@ -138,6 +140,9 @@ Nothing is deployed to phones yet; this only changes the cloud database.
 11. Copy [`migrations/0004_tombstone_guard.sql`](migrations/0004_tombstone_guard.sql),
     paste, **Run**. This keeps a delete on one phone from coming back when
     the other phone syncs a stale live copy.
+12. Copy [`migrations/0005_realtime_lists.sql`](migrations/0005_realtime_lists.sql),
+    paste, **Run**. This lets a delete show up on the other phone without
+    waiting for the 30-second heartbeat.
 
 You now have a database that matches what the Flutter sync code expects.
 

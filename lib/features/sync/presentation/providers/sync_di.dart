@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../core/backend/supabase_config.dart';
 import '../../../account/presentation/providers/account_di.dart';
 import '../../../catalog/presentation/providers/catalog_di.dart';
@@ -42,6 +43,7 @@ final syncStatusProvider =
 class SyncStatusNotifier extends Notifier<SyncState> {
   Timer? _debounce;
   Timer? _heartbeat;
+  RealtimeChannel? _listsChannel;
   bool _rerun = false;
 
   @override
@@ -49,8 +51,7 @@ class SyncStatusNotifier extends Notifier<SyncState> {
     ref.listen(currentUserProvider, (previous, next) {
       final user = next.valueOrNull;
       if (user == null) {
-        _heartbeat?.cancel();
-        _heartbeat = null;
+        stopHeartbeat();
         state = const SyncState(phase: SyncPhase.offline);
       } else {
         // Signing in is also the first sync: it is what uploads everything the
@@ -62,7 +63,7 @@ class SyncStatusNotifier extends Notifier<SyncState> {
 
     ref.onDispose(() {
       _debounce?.cancel();
-      _heartbeat?.cancel();
+      stopHeartbeat();
     });
     return const SyncState();
   }
@@ -76,11 +77,31 @@ class SyncStatusNotifier extends Notifier<SyncState> {
     _heartbeat = Timer.periodic(const Duration(seconds: 30), (_) {
       if (!state.isSyncing) unawaited(syncNow());
     });
+    _listenRemoteListChanges();
   }
 
   void stopHeartbeat() {
     _heartbeat?.cancel();
     _heartbeat = null;
+    final channel = _listsChannel;
+    _listsChannel = null;
+    if (channel != null) unawaited(channel.unsubscribe());
+  }
+
+  /// Postgres changes on `lists` (including tombstones) trigger an immediate
+  /// pull on the other phone. Requires migration 0005.
+  void _listenRemoteListChanges() {
+    final client = SupabaseConfig.clientOrNull;
+    if (client == null || _listsChannel != null) return;
+    _listsChannel = client
+        .channel('grocerio-lists')
+        .onPostgresChanges(
+          event: PostgresChangeEvent.all,
+          schema: 'public',
+          table: 'lists',
+          callback: (_) => requestSync(immediate: true),
+        )
+        .subscribe();
   }
 
   Future<void> syncNow() async {
