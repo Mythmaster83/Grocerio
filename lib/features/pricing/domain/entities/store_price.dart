@@ -3,7 +3,14 @@ import 'package:equatable/equatable.dart';
 /// The best current price for one store: what a comparison cell renders.
 class StorePrice extends Equatable {
   final int storeId;
+
+  /// Chain / brand only ("Kroger"). Location lives in [storePlace] so the
+  /// list-row trailing cell can put them on separate lines.
   final String storeName;
+
+  /// City and state ("Stone Mountain, GA"), or empty when unknown.
+  final String storePlace;
+
   final double price;
 
   /// The unit the reporter priced. Displayed verbatim, because a "$3.49" with
@@ -23,6 +30,7 @@ class StorePrice extends Equatable {
   const StorePrice({
     required this.storeId,
     required this.storeName,
+    this.storePlace = '',
     required this.price,
     required this.unit,
     required this.reportedAt,
@@ -31,8 +39,16 @@ class StorePrice extends Equatable {
   });
 
   @override
-  List<Object?> get props =>
-      [storeId, storeName, price, unit, reportedAt, isStale, reportId];
+  List<Object?> get props => [
+        storeId,
+        storeName,
+        storePlace,
+        price,
+        unit,
+        reportedAt,
+        isStale,
+        reportId,
+      ];
 }
 
 /// All stores' prices for one canonical item, cheapest first.

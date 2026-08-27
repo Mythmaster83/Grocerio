@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'centered_dialog.dart';
 
 /// One shared confirmation dialog for every destructive action in the app
 /// (delete item, delete list, clear list). Centralizing this is what
@@ -12,9 +13,10 @@ Future<bool> showConfirmDialog(
   String confirmLabel = 'Delete',
   bool isDestructive = true,
 }) async {
-  final result = await showDialog<bool>(
+  final result = await showCenteredDialog<bool>(
     context: context,
     builder: (context) => AlertDialog(
+      alignment: Alignment.center,
       title: Text(title),
       content: Text(message),
       actions: [

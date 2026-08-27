@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/security/input_sanitizer.dart';
+import '../../../../core/widgets/centered_dialog.dart';
 import '../../../preferences/presentation/providers/preferences_controller.dart';
 import '../../domain/entities/grocery_item.dart';
 
@@ -19,7 +20,9 @@ class UnitPicker extends ConsumerWidget {
   final UnitChanged onChanged;
 
   /// Compact form for the inline item-edit row, which has far less width
-  /// than the "Add item" sheet.
+  /// than the "Add item" sheet. Opens a centered dialog instead of a
+  /// dropdown — a menu anchored to a 96px field with the keyboard up lands
+  /// at the bottom of the screen.
   final bool dense;
 
   const UnitPicker({
@@ -33,7 +36,7 @@ class UnitPicker extends ConsumerWidget {
   static const _addCustomValue = '\u0000add-custom';
 
   Future<void> _promptForCustomUnit(BuildContext context, WidgetRef ref) async {
-    final label = await showDialog<String>(
+    final label = await showCenteredDialog<String>(
       context: context,
       builder: (_) => const _CustomUnitDialog(),
     );
@@ -43,6 +46,51 @@ class UnitPicker extends ConsumerWidget {
         .read(preferencesControllerProvider.notifier)
         .rememberCustomUnit(label);
     if (saved != null) onChanged(ItemUnit.custom, saved);
+  }
+
+  Future<void> _pickFromDialog(
+    BuildContext context,
+    WidgetRef ref,
+    List<String> labels,
+    String currentLabel,
+  ) async {
+    final picked = await showCenteredDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        alignment: Alignment.center,
+        title: const Text('Unit'),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.sizeOf(ctx).height * 0.5,
+            ),
+            child: ListView(
+              shrinkWrap: true,
+              children: [
+                for (final label in labels)
+                  ListTile(
+                    title: Text(label, overflow: TextOverflow.ellipsis),
+                    selected: label == currentLabel,
+                    onTap: () => Navigator.of(ctx).pop(label),
+                  ),
+                ListTile(
+                  title: const Text('Add custom unit…'),
+                  onTap: () => Navigator.of(ctx).pop(_addCustomValue),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+    if (picked == null) return;
+    if (picked == _addCustomValue) {
+      await _promptForCustomUnit(context, ref);
+      return;
+    }
+    final resolved = itemUnitFromLabel(picked);
+    onChanged(resolved.unit, resolved.customUnit);
   }
 
   @override
@@ -63,14 +111,33 @@ class UnitPicker extends ConsumerWidget {
         currentLabel,
     ];
 
+    if (dense) {
+      return InkWell(
+        onTap: () => _pickFromDialog(context, ref, labels, currentLabel),
+        child: InputDecorator(
+          decoration:
+              const InputDecoration(isDense: true, border: InputBorder.none),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  currentLabel.isEmpty ? 'Unit' : currentLabel,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              const Icon(Icons.arrow_drop_down, size: 20),
+            ],
+          ),
+        ),
+      );
+    }
+
     // A plain DropdownButton (not DropdownButtonFormField) so the displayed
     // value comes only from the parent's state. A FormField would latch onto
     // the "Add custom unit…" sentinel and keep showing it if the user
     // cancelled the dialog.
     return InputDecorator(
-      decoration: dense
-          ? const InputDecoration(isDense: true, border: InputBorder.none)
-          : const InputDecoration(labelText: 'Unit'),
+      decoration: const InputDecoration(labelText: 'Unit'),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<String>(
           value: labels.contains(currentLabel) ? currentLabel : null,
@@ -126,10 +193,11 @@ class _CustomUnitDialogState extends State<_CustomUnitDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
+      alignment: Alignment.center,
       title: const Text('Add custom unit'),
       content: TextField(
         controller: _controller,
-        autofocus: true,
+        autofocus: false,
         maxLength: InputSanitizer.maxUnitLabelLength,
         textCapitalization: TextCapitalization.none,
         decoration: const InputDecoration(

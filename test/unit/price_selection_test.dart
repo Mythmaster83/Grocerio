@@ -81,6 +81,30 @@ void main() {
       expect(comparison.cheapest?.storeName, 'Walmart');
     });
 
+    test('keeps brand and city/state on separate fields', () {
+      const krogerGa = Store(
+        id: 1,
+        slug: 'kroger',
+        name: 'Kroger',
+        chainSlug: 'kroger',
+        trackedByUser: true,
+        city: 'Stone Mountain',
+        state: 'GA',
+      );
+      final comparison = buildPriceComparison(
+        canonicalItemId: 10,
+        reports: [
+          report(id: 'a', storeId: 1, price: 3.49, age: const Duration(minutes: 4)),
+        ],
+        stores: [krogerGa],
+        now: now,
+      );
+
+      expect(comparison.cheapest?.storeName, 'Kroger');
+      expect(comparison.cheapest?.storePlace, 'Stone Mountain, GA');
+      expect(comparison.cheapest?.storeName.contains('Stone'), isFalse);
+    });
+
     test('ignores reports for other items', () {
       final comparison = buildPriceComparison(
         canonicalItemId: 10,
