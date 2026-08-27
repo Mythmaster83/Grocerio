@@ -1,46 +1,45 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
-/// Shows a material dialog that stays in the middle of the screen.
+/// Shows a material dialog in the visual middle of the screen.
 ///
-/// Two things conspire to glue dialogs to the bottom after inline item edit:
-/// the IME is often still up, and [Dialog] pads itself by
-/// [MediaQuery.viewInsets] (the keyboard). The remaining overlay is a strip
-/// above the keyboard, so a "centered" dialog looks parked at the bottom.
+/// [Dialog] centers itself in the area *above* [MediaQuery.viewInsets] (the
+/// keyboard). After inline item edit the IME is still up, so that area is a
+/// thin strip and the dialog looks glued to the bottom. Zeroing viewInsets
+/// instead centers on the full window — which is behind the OS keyboard, so
+/// the same dialog still looks bottom-stuck.
 ///
-/// This helper dismisses focus, then (by default) zeros viewInsets for the
-/// dialog route so [DialogTheme.alignment] is the real screen center.
+/// The reliable sequence is: hide the IME, wait until the engine reports a
+/// closed inset, then show the dialog on a route that no longer pads for
+/// the keyboard.
 Future<T?> showCenteredDialog<T>({
   required BuildContext context,
   required WidgetBuilder builder,
   bool barrierDismissible = true,
   bool useRootNavigator = true,
-  /// Keep keyboard padding so a tall form (sign-up) can still rise above the
-  /// IME. Confirm / picker dialogs should leave this true.
+  /// When false, the scaffold resizes for the IME so a tall form (sign-up)
+  /// can still rise above the keyboard after its own fields take focus.
   bool ignoreViewInsets = true,
 }) async {
-  FocusManager.instance.primaryFocus?.unfocus();
-  // One frame is not enough for the IME to report a zero inset on Android.
-  await Future<void>.delayed(const Duration(milliseconds: 80));
+  await _dismissKeyboard(context);
   if (!context.mounted) return null;
 
-  return showDialog<T>(
+  final capturedTheme = Theme.of(context);
+
+  return showGeneralDialog<T>(
     context: context,
     useRootNavigator: useRootNavigator,
     barrierDismissible: barrierDismissible,
-    builder: (ctx) {
+    barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
+    barrierColor: Colors.black54,
+    transitionDuration: const Duration(milliseconds: 180),
+    pageBuilder: (ctx, animation, secondaryAnimation) {
       Widget dialog = builder(ctx);
-      if (ignoreViewInsets) {
-        final media = MediaQuery.of(ctx);
-        dialog = MediaQuery(
-          data: media.copyWith(viewInsets: EdgeInsets.zero),
-          child: dialog,
-        );
-      }
       // App-wide FilledButtons use an infinite min width so they fill forms.
       // Inside a dialog that forces the action bar to wrap and the sheet to
       // grow until it sits on the bottom edge.
-      return Theme(
-        data: Theme.of(ctx).copyWith(
+      dialog = Theme(
+        data: capturedTheme.copyWith(
           filledButtonTheme: FilledButtonThemeData(
             style: FilledButton.styleFrom(
               minimumSize: const Size(64, 40),
@@ -50,6 +49,61 @@ Future<T?> showCenteredDialog<T>({
         ),
         child: dialog,
       );
+
+      if (ignoreViewInsets) {
+        dialog = MediaQuery.removeViewInsets(
+          context: ctx,
+          removeLeft: true,
+          removeTop: true,
+          removeRight: true,
+          removeBottom: true,
+          child: dialog,
+        );
+      }
+
+      // Scaffold absorbs hits, which would block the modal barrier. Only use
+      // one when a tall form must resize for its own keyboard.
+      if (!ignoreViewInsets) {
+        return Scaffold(
+          backgroundColor: Colors.transparent,
+          resizeToAvoidBottomInset: true,
+          body: Align(
+            alignment: Alignment.center,
+            child: dialog,
+          ),
+        );
+      }
+
+      return Align(
+        alignment: Alignment.center,
+        child: dialog,
+      );
+    },
+    transitionBuilder: (context, animation, secondaryAnimation, child) {
+      return FadeTransition(opacity: animation, child: child);
     },
   );
+}
+
+Future<void> _dismissKeyboard(BuildContext context) async {
+  FocusManager.instance.primaryFocus?.unfocus();
+  try {
+    await SystemChannels.textInput.invokeMethod('TextInput.hide');
+  } catch (_) {
+    // Tests and desktop have no IME channel; hiding is best-effort.
+  }
+  if (!context.mounted) return;
+
+  double bottomInset() {
+    final view = View.of(context);
+    return view.viewInsets.bottom / view.devicePixelRatio;
+  }
+
+  if (bottomInset() < 1) return;
+
+  for (var i = 0; i < 30; i++) {
+    await Future<void>.delayed(const Duration(milliseconds: 16));
+    if (!context.mounted) return;
+    if (bottomInset() < 1) return;
+  }
 }

@@ -111,57 +111,25 @@ class UnitPicker extends ConsumerWidget {
         currentLabel,
     ];
 
-    if (dense) {
-      return InkWell(
-        onTap: () => _pickFromDialog(context, ref, labels, currentLabel),
-        child: InputDecorator(
-          decoration:
-              const InputDecoration(isDense: true, border: InputBorder.none),
-          child: Row(
-            children: [
-              Expanded(
-                child: Text(
-                  currentLabel.isEmpty ? 'Unit' : currentLabel,
-                  overflow: TextOverflow.ellipsis,
-                ),
+    // Both the inline edit row and the add-item sheet open a centered dialog.
+    // A DropdownButton menu is laid out against the field, so with the
+    // keyboard up it lands at the bottom of the screen.
+    return InkWell(
+      onTap: () => _pickFromDialog(context, ref, labels, currentLabel),
+      child: InputDecorator(
+        decoration: dense
+            ? const InputDecoration(isDense: true, border: InputBorder.none)
+            : const InputDecoration(labelText: 'Unit'),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                currentLabel.isEmpty ? 'Unit' : currentLabel,
+                overflow: TextOverflow.ellipsis,
               ),
-              const Icon(Icons.arrow_drop_down, size: 20),
-            ],
-          ),
-        ),
-      );
-    }
-
-    // A plain DropdownButton (not DropdownButtonFormField) so the displayed
-    // value comes only from the parent's state. A FormField would latch onto
-    // the "Add custom unit…" sentinel and keep showing it if the user
-    // cancelled the dialog.
-    return InputDecorator(
-      decoration: const InputDecoration(labelText: 'Unit'),
-      child: DropdownButtonHideUnderline(
-        child: DropdownButton<String>(
-          value: labels.contains(currentLabel) ? currentLabel : null,
-          isExpanded: true,
-          items: [
-            for (final label in labels)
-              DropdownMenuItem(
-                value: label,
-                child: Text(label, overflow: TextOverflow.ellipsis),
-              ),
-            const DropdownMenuItem(
-              value: _addCustomValue,
-              child: Text('Add custom unit…'),
             ),
+            const Icon(Icons.arrow_drop_down, size: 20),
           ],
-          onChanged: (label) {
-            if (label == null) return;
-            if (label == _addCustomValue) {
-              _promptForCustomUnit(context, ref);
-              return;
-            }
-            final resolved = itemUnitFromLabel(label);
-            onChanged(resolved.unit, resolved.customUnit);
-          },
         ),
       ),
     );

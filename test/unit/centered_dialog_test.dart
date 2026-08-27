@@ -8,7 +8,7 @@ void main() {
       (tester) async {
     tester.view.physicalSize = const Size(1080, 1920);
     tester.view.devicePixelRatio = 1.0;
-    tester.view.viewInsets = FakeViewPadding.only(bottom: 640);
+    tester.view.viewInsets = const FakeViewPadding(bottom: 640);
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
     addTearDown(tester.view.resetViewInsets);
@@ -34,17 +34,23 @@ void main() {
 
     await tester.tap(find.text('Open'));
     await tester.pump();
-    await tester.pump(const Duration(milliseconds: 120));
+    // _dismissKeyboard polls the engine inset for up to ~480ms in tests
+    // because FakeViewPadding never drops to zero.
+    await tester.pump(const Duration(milliseconds: 520));
     await tester.pumpAndSettle();
 
     expect(find.byType(AlertDialog), findsOneWidget);
-    final dialogRect = tester.getRect(find.byType(AlertDialog));
-    final screenRect = tester.getRect(find.byType(MaterialApp));
+    // AlertDialog itself expands to the overlay; measure the card chrome
+    // (title through actions) so a full-screen widget cannot fake a pass.
+    final top = tester.getRect(find.text('Delete item?')).top;
+    final bottom = tester.getRect(find.text('Cancel')).bottom;
+    final cardMid = (top + bottom) / 2;
+    final screenMid = tester.getRect(find.byType(MaterialApp)).center.dy;
     expect(
-      (dialogRect.center.dy - screenRect.center.dy).abs(),
+      (cardMid - screenMid).abs(),
       lessThan(80),
       reason:
-          'dialog should sit in the middle of the screen, not the strip above the keyboard',
+          'dialog card should sit in the middle of the screen, not the strip above the keyboard',
     );
   });
 }
