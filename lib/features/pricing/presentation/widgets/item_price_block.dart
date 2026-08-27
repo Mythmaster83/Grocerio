@@ -5,12 +5,13 @@ import '../../domain/entities/store_price.dart';
 import '../../domain/price_selection.dart';
 import '../providers/pricing_di.dart';
 
-/// Trailing price cell on a list row: the price, then the store and how long
-/// ago someone saw it.
+/// Trailing price cell on a list row: the price, then brand + age on one
+/// line and the place on the next.
 ///
-/// The age line is not decoration. With shopper-reported data there is no
-/// authority behind a number, so "Kroger · 2h ago" is the only thing that lets
-/// a reader judge whether to trust it.
+/// Brand and place used to share one unconstrained line
+/// (`Kroger · Stone Mountain, GA · 4m ago`). After addresses loaded that
+/// string stole width from the item name and ellipsized it. Splitting them
+/// keeps the same 11px type and a bounded trailing column.
 class ItemPriceBlock extends ConsumerWidget {
   final int? canonicalItemId;
 
@@ -45,29 +46,42 @@ class _PriceCell extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final color = price.isStale ? AppColors.textMuted : AppColors.accent;
+    final storeStyle = theme.textTheme.bodySmall?.copyWith(
+      color: AppColors.textMuted,
+      fontSize: 11,
+    );
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.end,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Text(
-          '\$${price.price.toStringAsFixed(2)}',
-          style: theme.textTheme.titleMedium?.copyWith(
-            color: color,
-            fontWeight: FontWeight.w700,
+    return ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 148),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            '\$${price.price.toStringAsFixed(2)}',
+            style: theme.textTheme.titleMedium?.copyWith(
+              color: color,
+              fontWeight: FontWeight.w700,
+            ),
           ),
-        ),
-        const SizedBox(height: 2),
-        Text(
-          '${price.storeName} · ${formatReportedAge(price.reportedAt, DateTime.now())}',
-          style: theme.textTheme.bodySmall?.copyWith(
-            color: AppColors.textMuted,
-            fontSize: 11,
+          const SizedBox(height: 2),
+          Text(
+            '${price.storeName} · ${formatReportedAge(price.reportedAt, DateTime.now())}',
+            style: storeStyle,
+            textAlign: TextAlign.end,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
-          textAlign: TextAlign.end,
-          maxLines: 2,
-        ),
-      ],
+          if (price.storePlace.isNotEmpty)
+            Text(
+              price.storePlace,
+              style: storeStyle,
+              textAlign: TextAlign.end,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+        ],
+      ),
     );
   }
 }
@@ -80,31 +94,34 @@ class _NoPrice extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.end,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Text(
-          'No price yet',
-          style: theme.textTheme.bodySmall?.copyWith(
-            color: AppColors.textMuted,
-            fontSize: 11,
-          ),
-        ),
-        SizedBox(
-          height: 28,
-          child: TextButton(
-            onPressed: onReport,
-            style: TextButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
-              minimumSize: Size.zero,
-              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              visualDensity: VisualDensity.compact,
+    return ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 148),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            'No price yet',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: AppColors.textMuted,
+              fontSize: 11,
             ),
-            child: const Text('Report'),
           ),
-        ),
-      ],
+          SizedBox(
+            height: 28,
+            child: TextButton(
+              onPressed: onReport,
+              style: TextButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+                minimumSize: Size.zero,
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                visualDensity: VisualDensity.compact,
+              ),
+              child: const Text('Report'),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

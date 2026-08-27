@@ -30,7 +30,7 @@ PriceComparison buildPriceComparison({
   Duration freshWindow = kPriceFreshWindow,
   Duration maxAge = kPriceMaxAge,
 }) {
-  final storeNames = {for (final store in stores) store.id: store.listLabel};
+  final storeById = {for (final store in stores) store.id: store};
   final freshCutoff = now.subtract(freshWindow);
   final ageCutoff = now.subtract(maxAge);
 
@@ -44,7 +44,7 @@ PriceComparison buildPriceComparison({
       continue;
     }
     // A store that was deleted or never seeded has no name to render.
-    if (!storeNames.containsKey(report.storeId)) continue;
+    if (!storeById.containsKey(report.storeId)) continue;
 
     final incumbent = newestPerStore[report.storeId];
     if (incumbent == null || report.reportedAt.isAfter(incumbent.reportedAt)) {
@@ -56,7 +56,8 @@ PriceComparison buildPriceComparison({
     for (final report in newestPerStore.values)
       StorePrice(
         storeId: report.storeId,
-        storeName: storeNames[report.storeId]!,
+        storeName: storeById[report.storeId]!.name,
+        storePlace: storeById[report.storeId]!.cityState,
         price: report.price,
         unit: report.unit,
         reportedAt: report.reportedAt,

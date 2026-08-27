@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../core/widgets/centered_dialog.dart';
 
 /// Shared "last date missed" control — used on Home tiles and list detail.
 class MissedDateIndicator extends StatelessWidget {
@@ -24,9 +25,10 @@ Future<void> showMissedDateDialog({
   required BuildContext context,
   required Future<void> Function() onAcknowledge,
 }) async {
-  await showDialog<void>(
+  await showCenteredDialog<void>(
     context: context,
     builder: (ctx) => AlertDialog(
+      alignment: Alignment.center,
       title: const Text('Last date missed'),
       content: const Text(
         'This list\'s planned date has already passed.',

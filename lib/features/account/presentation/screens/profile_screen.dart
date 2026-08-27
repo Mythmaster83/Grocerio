@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/tokens.dart';
+import '../../../../core/widgets/centered_dialog.dart';
 import '../../../../core/widgets/confirm_dialog.dart';
 import '../../../sync/presentation/providers/sync_di.dart';
 import '../../data/auth_service.dart';
@@ -89,9 +90,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   Future<void> _openCreateAccountDialog() async {
     FocusScope.of(context).unfocus();
     var signedInFromDialog = false;
-    await showDialog<void>(
+    await showCenteredDialog<void>(
       context: context,
       barrierDismissible: false,
+      ignoreViewInsets: false,
       builder: (_) => _CreateAccountDialog(
         initialEmail: _emailController.text.trim(),
         onSignedIn: () {
@@ -189,9 +191,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     required String title,
     required String message,
   }) {
-    return showDialog<void>(
+    return showCenteredDialog<void>(
       context: context,
       builder: (ctx) => AlertDialog(
+        alignment: Alignment.center,
         title: Text(title),
         content: Text(message),
         actions: [
@@ -737,6 +740,7 @@ class _CreateAccountDialogState extends ConsumerState<_CreateAccountDialog> {
     final theme = Theme.of(context);
 
     return AlertDialog(
+      alignment: Alignment.center,
       title: Text(_checkEmail ? 'Check your email' : 'Create account'),
       content: AnimatedSize(
         duration: const Duration(milliseconds: 280),
