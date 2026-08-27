@@ -25,4 +25,11 @@ void main() {
     expect(GeoDistance.formatMiles(3.2, approximate: true), '~3 mi');
     expect(GeoDistance.formatMiles(42.4, approximate: true), '~42 mi');
   });
+
+  test('isPlausible rejects Null Island and out-of-range coords', () {
+    expect(GeoDistance.isPlausible(lat: 33.75, lon: -84.39), isTrue);
+    expect(GeoDistance.isPlausible(lat: 0, lon: 0), isFalse);
+    expect(GeoDistance.isPlausible(lat: 91, lon: 0), isFalse);
+    expect(GeoDistance.isPlausible(lat: double.nan, lon: 0), isFalse);
+  });
 }

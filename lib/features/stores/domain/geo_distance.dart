@@ -25,6 +25,15 @@ class GeoDistance {
 
   static double _rad(double deg) => deg * math.pi / 180.0;
 
+  /// Rejects Null Island and out-of-range GPS junk that made every store
+  /// look thousands of miles away.
+  static bool isPlausible({required double lat, required double lon}) {
+    if (lat.isNaN || lon.isNaN) return false;
+    if (lat.abs() > 90 || lon.abs() > 180) return false;
+    if (lat.abs() < 0.01 && lon.abs() < 0.01) return false;
+    return true;
+  }
+
   /// [approximate] uses whole miles with a `~` so coarse GPS is not shown as
   /// more precise than it is. Precise GPS keeps one decimal under 10 mi.
   static String formatMiles(double miles, {bool approximate = false}) {

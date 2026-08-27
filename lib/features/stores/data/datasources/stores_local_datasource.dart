@@ -7,10 +7,14 @@ class StoresLocalDataSource {
   StoresLocalDataSource(this._isar);
 
   Stream<List<StoreModel>> watchStores() {
-    return _isar.storeModels
-        .where()
-        .watch(fireImmediately: true)
-        .asyncMap((_) => _isar.storeModels.where().sortByName().findAll());
+    // Query.watch already emits the rows. A second findAll on every
+    // notification doubled the cost of a ~5k-row directory and stalled
+    // the first frame of Your stores (looked blank).
+    return _isar.storeModels.where().watch(fireImmediately: true).map((rows) {
+      final copy = List<StoreModel>.from(rows);
+      copy.sort((a, b) => a.name.compareTo(b.name));
+      return copy;
+    });
   }
 
   Future<List<StoreModel>> getAll() => _isar.storeModels.where().sortByName().findAll();
