@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'core/theme/app_theme.dart';
+import 'features/legal/presentation/providers/consent_controller.dart';
+import 'features/legal/presentation/screens/privacy_consent_screen.dart';
 import 'features/lists/presentation/screens/home_screen.dart';
 import 'features/preferences/presentation/providers/preferences_controller.dart';
 import 'features/stores/presentation/providers/stores_di.dart';
@@ -45,6 +47,8 @@ class _GrocerAppState extends ConsumerState<GrocerApp>
   @override
   Widget build(BuildContext context) {
     final prefsAsync = ref.watch(preferencesControllerProvider);
+    // Gate the app behind first-run privacy/terms acceptance.
+    final consentAsync = ref.watch(consentControllerProvider);
     // Prefetch the store directory so Your stores is not empty on first open.
     ref.watch(storesStreamProvider);
 
@@ -78,7 +82,29 @@ class _GrocerAppState extends ConsumerState<GrocerApp>
       },
       // Single-page app: lists are the whole UI, settings is pushed from the
       // AppBar. No bottom navigation to keep one destination unambiguous.
-      home: const HomeScreen(),
+      // On first launch the privacy/terms consent gate takes over until
+      // accepted; a brief neutral splash covers the fast local consent read so
+      // the gate never flashes for a user who has already agreed.
+      home: consentAsync.when(
+        data: (accepted) =>
+            accepted ? const HomeScreen() : const PrivacyConsentScreen(),
+        loading: () => const _StartupSplash(),
+        error: (_, __) => const PrivacyConsentScreen(),
+      ),
+    );
+  }
+}
+
+/// Neutral placeholder shown for the sub-frame it takes to read the stored
+/// consent flag. Deliberately minimal — matching the "brief default theme"
+/// approach used for preferences loading rather than a bespoke splash.
+class _StartupSplash extends StatelessWidget {
+  const _StartupSplash();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(
+      body: Center(child: CircularProgressIndicator()),
     );
   }
 }
