@@ -20,6 +20,11 @@ class PrivacyConsentScreen extends ConsumerStatefulWidget {
 class _PrivacyConsentScreenState extends ConsumerState<PrivacyConsentScreen> {
   bool _busy = false;
 
+  /// Gates the Continue button: the user must tick the acknowledgement box
+  /// before they can proceed, so acceptance is an explicit action rather than
+  /// an implicit consequence of tapping through.
+  bool _agreed = false;
+
   Future<void> _openPolicy() async {
     final uri = Uri.tryParse(LegalConfig.privacyPolicyUrl);
     var opened = false;
@@ -134,7 +139,12 @@ class _PrivacyConsentScreenState extends ConsumerState<PrivacyConsentScreen> {
                 ],
               ),
             ),
-            _ConsentFooter(busy: _busy, onAgree: _accept),
+            _ConsentFooter(
+              busy: _busy,
+              agreed: _agreed,
+              onAgreedChanged: (value) => setState(() => _agreed = value),
+              onContinue: _accept,
+            ),
           ],
         ),
       ),
@@ -194,13 +204,21 @@ class _DisclaimerCard extends StatelessWidget {
   }
 }
 
-/// Sticky footer with the acceptance note and the agree button, kept out of the
-/// scroll area so the primary action is always reachable.
+/// Sticky footer with the acknowledgement checkbox and the Continue button,
+/// kept out of the scroll area so the primary action is always reachable.
+/// Continue stays disabled until the box is ticked.
 class _ConsentFooter extends StatelessWidget {
   final bool busy;
-  final VoidCallback onAgree;
+  final bool agreed;
+  final ValueChanged<bool> onAgreedChanged;
+  final VoidCallback onContinue;
 
-  const _ConsentFooter({required this.busy, required this.onAgree});
+  const _ConsentFooter({
+    required this.busy,
+    required this.agreed,
+    required this.onAgreedChanged,
+    required this.onContinue,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -208,7 +226,7 @@ class _ConsentFooter extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.fromLTRB(
         AppSpacing.xl,
-        AppSpacing.md,
+        AppSpacing.sm,
         AppSpacing.xl,
         AppSpacing.lg,
       ),
@@ -219,25 +237,41 @@ class _ConsentFooter extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(
-            'By tapping "I agree" you accept the Privacy Policy and Terms of '
-            'Service above.',
-            textAlign: TextAlign.center,
-            style: theme.textTheme.bodySmall
-                ?.copyWith(color: AppColors.textMuted),
+          // Whole row is tappable, not just the box, so the label is a target.
+          InkWell(
+            onTap: busy ? null : () => onAgreedChanged(!agreed),
+            borderRadius: BorderRadius.circular(AppRadii.sm),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
+              child: Row(
+                children: [
+                  Checkbox(
+                    value: agreed,
+                    onChanged:
+                        busy ? null : (value) => onAgreedChanged(value ?? false),
+                  ),
+                  Expanded(
+                    child: Text(
+                      'I have read the Privacy Policy and agree.',
+                      style: theme.textTheme.bodyMedium,
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
-          const SizedBox(height: AppSpacing.md),
+          const SizedBox(height: AppSpacing.sm),
           SizedBox(
             width: double.infinity,
             child: FilledButton(
-              onPressed: busy ? null : onAgree,
+              onPressed: (busy || !agreed) ? null : onContinue,
               child: busy
                   ? const SizedBox(
                       width: 20,
                       height: 20,
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
-                  : const Text('I agree — continue'),
+                  : const Text('Continue'),
             ),
           ),
         ],

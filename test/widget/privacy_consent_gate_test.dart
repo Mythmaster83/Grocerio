@@ -50,7 +50,8 @@ void main() {
     expect(find.text('HOME'), findsNothing);
   });
 
-  testWidgets('agreeing dismisses the gate and reveals home', (tester) async {
+  testWidgets('continue is gated on ticking the checkbox, then reveals home',
+      (tester) async {
     SharedPreferences.setMockInitialValues({});
 
     await tester.pumpWidget(
@@ -58,7 +59,21 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('I agree — continue'));
+    // Continue is disabled until the box is ticked.
+    final continueButton = tester.widget<FilledButton>(
+      find.widgetWithText(FilledButton, 'Continue'),
+    );
+    expect(continueButton.onPressed, isNull);
+
+    // Tapping Continue while disabled does nothing — still on the gate.
+    await tester.tap(find.text('Continue'));
+    await tester.pumpAndSettle();
+    expect(find.text('HOME'), findsNothing);
+
+    // Tick the acknowledgement, then continue.
+    await tester.tap(find.byType(Checkbox));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Continue'));
     await tester.pumpAndSettle();
 
     expect(find.text('HOME'), findsOneWidget);
