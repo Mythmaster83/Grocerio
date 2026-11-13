@@ -1,6 +1,6 @@
 # Grocerio privacy policy
 
-Last updated: 22 August 2026
+Last updated: 30 August 2026
 
 This is the policy the Play listing and in-app account-deletion flow should
 link to. A ready-to-upload Netlify site lives in [`netlify-privacy/`](netlify-privacy/).
@@ -17,6 +17,37 @@ Grocerio is a grocery-list app. Lists, item check-offs, schedules, and
 reminders work on your phone without an account. Signing in is optional and
 only needed if you want to share a list with someone else or see prices
 other shoppers nearby have reported.
+
+## Terms of Service and disclaimer
+
+By using Grocerio you accept the following. You must agree to this on first
+launch before the app can be used.
+
+- **All data is user-submitted and crowdsourced.** Every price, store note,
+  and list detail in Grocerio was typed by a shopper like you. Nothing is
+  pulled from a retailer feed or official API. It is provided "as is," may be
+  incomplete, out of date, or simply wrong, and comes with no warranty of any
+  kind.
+- **Prices are strictly informational.** They are estimates shared by other
+  shoppers, not quotes. Retailers set and change their own prices at any time
+  without notice, and the price you see in Grocerio may not match the price at
+  the register. Always confirm the current price in the store. Grocerio is not
+  liable for any decision you make based on a reported price.
+- **Grocerio is entirely independent.** It is not affiliated with, endorsed by,
+  sponsored by, or connected to any supermarket, grocery chain, or retailer
+  mentioned in the app. Store and brand names are used only to help you
+  organize your own shopping and identify where a shopper reported a price.
+  All trademarks belong to their respective owners.
+
+### Follow each store's own rules
+
+Some retailers restrict photographing, recording, or collecting price and
+product information on their premises, and a few prohibit it outright in their
+own terms of service or posted policies. **You are responsible for following
+the terms of service and in-store rules of any store you visit.** Only report a
+price if the store you are in allows it. Grocerio does not grant you permission
+to collect data anywhere, and any consequences of ignoring a store's rules are
+yours, not ours.
 
 ## Data the app stores on your device
 

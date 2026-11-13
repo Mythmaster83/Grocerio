@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:url_launcher/url_launcher.dart';
+import '../../../core/config/legal_config.dart';
 import '../../../core/theme/tokens.dart';
 import '../../account/presentation/providers/account_di.dart';
 import '../../account/presentation/screens/profile_screen.dart';
@@ -25,6 +27,25 @@ class AppDrawer extends ConsumerWidget {
     final nav = Navigator.of(context);
     nav.pop();
     nav.push(MaterialPageRoute(builder: (_) => screen));
+  }
+
+  /// Opens the hosted privacy-policy / terms page in the browser. Same
+  /// document the first-run consent gate links to.
+  Future<void> _openPolicy(BuildContext context) async {
+    // Capture the messenger before popping, since the drawer context is
+    // disposed as soon as the drawer closes.
+    final messenger = ScaffoldMessenger.of(context);
+    Navigator.of(context).pop();
+    final uri = Uri.tryParse(LegalConfig.privacyPolicyUrl);
+    final opened = uri != null &&
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+    if (!opened) {
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text('Could not open the privacy policy. Try again later.'),
+        ),
+      );
+    }
   }
 
   @override
@@ -72,6 +93,12 @@ class AppDrawer extends ConsumerWidget {
               leading: const Icon(Icons.notifications_none),
               title: const Text('Notifications'),
               onTap: () => _go(context, const NotificationsScreen()),
+            ),
+            const Divider(height: 1),
+            ListTile(
+              leading: const Icon(Icons.privacy_tip_outlined),
+              title: const Text('Privacy & terms'),
+              onTap: () => _openPolicy(context),
             ),
           ],
         ),
